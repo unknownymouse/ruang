@@ -1,6 +1,16 @@
 """Context processors for sidebar and global template data."""
 
+from django.conf import settings
 from django.db.models import Count, Q
+
+
+def brand_context(request):
+    """Expose operator-configurable Ruang legal and support links."""
+    return {
+        "RUANG_SUPPORT_EMAIL": settings.RUANG_SUPPORT_EMAIL,
+        "RUANG_TERMS_URL": settings.RUANG_TERMS_URL,
+        "RUANG_PRIVACY_URL": settings.RUANG_PRIVACY_URL,
+    }
 
 
 def sidebar_context(request):

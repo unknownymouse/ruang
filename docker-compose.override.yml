@@ -4,7 +4,7 @@ services:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/brightbean
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ruang
 
   app:
     command: python manage.py runserver 0.0.0.0:8000
@@ -12,14 +12,14 @@ services:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/brightbean
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ruang
 
   worker:
     volumes:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/brightbean
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ruang
 
   tailwind:
     image: node:20-slim

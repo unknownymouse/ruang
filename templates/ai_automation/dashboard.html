@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Ruang AI · {{ workspace.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .ruang-shell { max-width: 1440px; margin: 0 auto; padding: 28px; }
+  .ruang-hero { background: linear-gradient(135deg, #102a2b 0%, #174d4b 58%, #226a63 100%); color: #fff; border-radius: 24px; padding: 28px; position: relative; overflow: hidden; }
+  .ruang-hero:after { content: ""; position: absolute; width: 260px; height: 260px; border-radius: 999px; background: rgba(194,255,219,.12); right: -70px; top: -120px; }
+  .ruang-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .17em; font-weight: 800; color: #a7f3d0; }
+  .ruang-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr); gap: 20px; margin-top: 20px; }
+  .ruang-card { background: #fff; border: 1px solid #e7e5e4; border-radius: 20px; padding: 22px; box-shadow: 0 10px 35px rgba(28,25,23,.04); }
+  .ruang-card h2 { font-size: 17px; font-weight: 750; color: #1c1917; margin-bottom: 4px; }
+  .ruang-card p.help { color: #78716c; font-size: 12px; margin-bottom: 18px; }
+  .ruang-field { margin-bottom: 14px; }
+  .ruang-field label { display: block; font-size: 11px; font-weight: 750; color: #57534e; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+  .ruang-field input, .ruang-field textarea, .ruang-field select { width: 100%; border: 1px solid #d6d3d1; border-radius: 12px; padding: 10px 12px; font-size: 13px; outline: none; background: #fff; color: #292524; }
+  .ruang-field input:focus, .ruang-field textarea:focus { border-color: #168178; box-shadow: 0 0 0 3px rgba(22,129,120,.11); }
+  .ruang-field textarea { min-height: 88px; resize: vertical; }
+  .ruang-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ruang-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .ruang-btn { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; padding: 10px 17px; font-size: 12px; font-weight: 750; cursor: pointer; text-decoration: none; }
+  .ruang-btn-primary { background: #126e68; color: #fff; }
+  .ruang-btn-primary:hover { background: #0e5b56; }
+  .ruang-btn-soft { background: #ecfdf5; color: #0f766e; }
+  .ruang-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .ruang-stat { min-width: 150px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); padding: 12px 14px; border-radius: 14px; backdrop-filter: blur(5px); }
+  .ruang-stat strong { display: block; font-size: 19px; }
+  .ruang-stat span { color: #ccfbf1; font-size: 11px; }
+  .ruang-channels { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ruang-channel { border: 1px solid #d6d3d1; padding: 8px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+  .ruang-campaign { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid #f0efed; }
+  .ruang-campaign:last-child { border-bottom: 0; }
+  .ruang-campaign a { color: #1c1917; font-weight: 700; text-decoration: none; }
+  .ruang-campaign small { display: block; color: #78716c; margin-top: 3px; }
+  .ruang-badge { display: inline-flex; padding: 5px 9px; border-radius: 999px; background: #f5f5f4; color: #57534e; font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+  .ruang-note { font-size: 12px; padding: 11px 13px; border-radius: 12px; background: #f0fdfa; color: #115e59; margin-bottom: 14px; }
+  @media (max-width: 980px) { .ruang-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .ruang-shell { padding: 16px; } .ruang-two { grid-template-columns: 1fr; } }
+</style>
+
+<main class="ruang-shell">
+  <section class="ruang-hero">
+    <div class="ruang-kicker">Ruang AI Operations</div>
+    <h1 style="font-size:30px;font-weight:800;margin:5px 0 7px;">Dari brief ke kalender konten.</h1>
+    <p style="max-width:720px;color:#d1fae5;font-size:14px;">
+      Brand-aware, multi-provider, dimoderasi, dan selalu melewati persetujuan manusia sebelum masuk jalur publikasi.
+    </p>
+    <div class="ruang-stats">
+      <div class="ruang-stat"><strong>{{ campaigns|length }}</strong><span>Kampanye terbaru</span></div>
+      <div class="ruang-stat"><strong>{{ usage.total_tokens }}</strong><span>Token bulan ini</span></div>
+      <div class="ruang-stat"><strong>${{ usage.cost|floatformat:4 }}</strong><span>Estimasi biaya</span></div>
+      <div class="ruang-stat"><strong>{% if provider_names %}{{ provider_names|join:", " }}{% else %}—{% endif %}</strong><span>Provider aktif / fallback</span></div>
+    </div>
+  </section>
+
+  <div class="ruang-grid">
+    <section>
+      <div class="ruang-card">
+        <h2>Buat kampanye otomatis</h2>
+        <p class="help">Ruang membuat strategi, variasi caption native, visual prompt, video script, dan tanggal publikasi yang disarankan.</p>
+        <form method="post" action="{% url 'automation:create_campaign' workspace_id=workspace.id %}">
+          {% csrf_token %}
+          <div class="ruang-field">
+            <label>Nama kampanye</label>
+            <input name="name" required placeholder="Peluncuran produk Agustus">
+          </div>
+          <div class="ruang-field">
+            <label>Brief</label>
+            <textarea name="brief" required placeholder="Apa yang akan dikomunikasikan, konteks produk, pesan utama, offer, batasan fakta..."></textarea>
+          </div>
+          <div class="ruang-two">
+            <div class="ruang-field">
+              <label>Objective</label>
+              <input name="objective" placeholder="Awareness, leads, conversion...">
+            </div>
+            <div class="ruang-field">
+              <label>Target audiens</label>
+              <input name="target_audience" placeholder="Founder UMKM usia 25–40">
+            </div>
+          </div>
+          <div class="ruang-two">
+            <div class="ruang-field">
+              <label>Mulai</label>
+              <input type="date" name="start_date" value="{{ default_start|date:'Y-m-d' }}" required>
+            </div>
+            <div class="ruang-field">
+              <label>Selesai</label>
+              <input type="date" name="end_date" value="{{ default_end|date:'Y-m-d' }}" required>
+            </div>
+          </div>
+          <div class="ruang-field">
+            <label>Channel dan akun</label>
+            {% if accounts %}
+            <div class="ruang-channels">
+              {% for account in accounts %}
+              <label class="ruang-channel">
+                <input type="checkbox" name="platforms" value="{{ account.platform }}" style="width:auto;margin-right:5px;">
+                {{ account.get_platform_display }} · {{ account.account_name|default:account.account_handle }}
+              </label>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="ruang-note">Hubungkan minimal satu social account untuk membuat kalender lintas channel.</div>
+            {% endif %}
+          </div>
+          <div class="ruang-field" style="max-width:220px;">
+            <label>Konten per minggu</label>
+            <input type="number" min="1" max="14" name="cadence_per_week" value="3">
+          </div>
+          <div class="ruang-actions">
+            <button class="ruang-btn ruang-btn-primary" type="submit" {% if not accounts %}disabled{% endif %}>Generate strategi + kalender</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ruang-card" style="margin-top:20px;">
+        <h2>Kampanye</h2>
+        <p class="help">Semua output AI berhenti di approval gate sebelum menjadi draft composer.</p>
+        {% for campaign in campaigns %}
+        <div class="ruang-campaign">
+          <div>
+            <a href="{% url 'automation:campaign_detail' workspace_id=workspace.id campaign_id=campaign.id %}">{{ campaign.name }}</a>
+            <small>{{ campaign.start_date }} → {{ campaign.end_date }} · {{ campaign.platforms|join:", " }} · {{ campaign.created_by.display_name|default:"System" }}</small>
+          </div>
+          <span class="ruang-badge">{{ campaign.get_status_display }}</span>
+        </div>
+        {% empty %}
+        <div class="ruang-note">Belum ada kampanye. Mulai dengan brief pertama di atas.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <aside>
+      <div class="ruang-card">
+        <h2>Brand Brain</h2>
+        <p class="help">Tone, persona, produk, aturan, audiens, dan knowledge base menjadi konteks permanen setiap generasi.</p>
+        {% if can_manage_brand %}
+        <form method="post" action="{% url 'automation:update_brand_brain' workspace_id=workspace.id %}">
+          {% csrf_token %}
+          <div class="ruang-field"><label>Tone</label><textarea name="tone">{{ brain.tone }}</textarea></div>
+          <div class="ruang-field"><label>Persona</label><textarea name="persona">{{ brain.persona }}</textarea></div>
+          <div class="ruang-field"><label>Produk · satu per baris</label><textarea name="products">{{ brain.products|join:"&#10;" }}</textarea></div>
+          <div class="ruang-field"><label>Audiens · satu per baris</label><textarea name="audiences">{{ brain.audiences|join:"&#10;" }}</textarea></div>
+          <div class="ruang-field"><label>Aturan brand</label><textarea name="guidelines">{{ brain.guidelines }}</textarea></div>
+          <div class="ruang-field"><label>Topik terlarang · satu per baris</label><textarea name="forbidden_topics">{{ brain.forbidden_topics|join:"&#10;" }}</textarea></div>
+          <div class="ruang-field"><label>Knowledge base</label><textarea name="knowledge_base" style="min-height:150px;">{{ brain.knowledge_base }}</textarea></div>
+          <div class="ruang-two">
+            <div class="ruang-field"><label>Bahasa</label><input name="default_language" value="{{ brain.default_language }}"></div>
+            <div class="ruang-field"><label>Token / bulan</label><input type="number" name="monthly_token_limit" value="{{ brain.monthly_token_limit }}"></div>
+          </div>
+          <div class="ruang-field"><label>Batas biaya / bulan (USD)</label><input type="number" step="0.01" min="0" name="monthly_cost_limit_usd" value="{{ brain.monthly_cost_limit_usd }}"></div>
+          <div class="ruang-actions"><button class="ruang-btn ruang-btn-primary">Simpan Brand Brain</button></div>
+        </form>
+        {% else %}
+        <div class="ruang-note">Hanya pengguna dengan izin pengaturan workspace yang dapat mengubah Brand Brain.</div>
+        {% endif %}
+      </div>
+
+      <div class="ruang-card" style="margin-top:20px;">
+        <h2>Prompt version</h2>
+        <p class="help">Versi aktif: <strong>v{{ prompt.version }}</strong>. Versi lama tetap tersimpan untuk audit.</p>
+        {% if can_manage_brand %}
+        <form method="post" action="{% url 'automation:create_prompt_version' workspace_id=workspace.id %}">
+          {% csrf_token %}
+          <div class="ruang-field"><textarea name="template" style="min-height:220px;">{{ prompt.template }}</textarea></div>
+          <div class="ruang-actions"><button class="ruang-btn ruang-btn-soft">Simpan sebagai v{{ prompt.version|add:"1" }}</button></div>
+        </form>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+</main>
+{% endblock %}
