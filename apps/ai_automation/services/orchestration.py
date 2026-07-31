@@ -111,7 +111,10 @@ def enforce_quota(workspace, brand_brain: BrandBrain) -> None:
         raise QuotaExceededError("Monthly AI cost quota has been reached.")
 
 
-def moderate_text(text: str, brand_brain: BrandBrain) -> tuple[str, list[str]]:
+def moderate_text(
+    text: str,
+    brand_brain: BrandBrain,
+) -> tuple[ContentDraft.ModerationStatus, list[str]]:
     normalized = text.casefold()
     reasons = []
     configured = [str(topic).strip() for topic in brand_brain.forbidden_topics if str(topic).strip()]
