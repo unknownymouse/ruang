@@ -85,6 +85,10 @@ def update_brand_brain(request, workspace_id):
     brain.guidelines = request.POST.get("guidelines", "").strip()
     brain.forbidden_topics = _lines(request.POST.get("forbidden_topics", ""))
     brain.knowledge_base = request.POST.get("knowledge_base", "").strip()
+    brain.traffic_strategy_enabled = request.POST.get("traffic_strategy_enabled") == "on"
+    brain.traffic_goals = request.POST.get("traffic_goals", "").strip()
+    brain.topic_seeds = _lines(request.POST.get("topic_seeds", ""))
+    brain.conversion_actions = request.POST.get("conversion_actions", "").strip()
     brain.default_language = request.POST.get("default_language", "id").strip()[:20] or "id"
     try:
         brain.monthly_token_limit = max(int(request.POST.get("monthly_token_limit") or 0), 1)

@@ -25,6 +25,10 @@ class BrandBrain(models.Model):
     guidelines = models.TextField(blank=True, default="")
     forbidden_topics = models.JSONField(default=list, blank=True)
     knowledge_base = models.TextField(blank=True, default="")
+    traffic_strategy_enabled = models.BooleanField(default=True)
+    traffic_goals = models.TextField(blank=True, default="")
+    topic_seeds = models.JSONField(default=list, blank=True)
+    conversion_actions = models.TextField(blank=True, default="")
     default_language = models.CharField(max_length=20, default="id")
     monthly_token_limit = models.PositiveIntegerField(default=1_000_000)
     monthly_cost_limit_usd = models.DecimalField(
@@ -125,6 +129,7 @@ class Campaign(models.Model):
     end_date = models.DateField()
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT, db_index=True)
     strategy = models.JSONField(default=dict, blank=True)
+    strategy_sources = models.JSONField(default=list, blank=True)
     provider = models.CharField(max_length=60, blank=True, default="")
     model_name = models.CharField(max_length=120, blank=True, default="")
     prompt_version = models.PositiveIntegerField(default=0)

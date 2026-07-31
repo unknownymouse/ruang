@@ -61,6 +61,7 @@ PLATFORM_DAILY_POST_LIMIT: dict[str, int] = {
     "mastodon": 200,
     "bluesky": 200,
     "google_business": 50,
+    "x": 50,
 }
 
 _DEFAULT_FALLBACK = 50

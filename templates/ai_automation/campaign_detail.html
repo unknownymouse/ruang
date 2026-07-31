@@ -72,9 +72,23 @@
       <div><label>North star</label><p>{{ campaign.strategy.north_star }}</p></div>
       <div><label>Narrative</label><p>{{ campaign.strategy.narrative }}</p></div>
       <div><label>Optimization</label><p>{{ campaign.strategy.optimization_note }}</p></div>
+      <div><label>Traffic objective</label><p>{{ campaign.strategy.traffic_objective }}</p></div>
+      <div><label>Conversion path</label><p>{{ campaign.strategy.conversion_path }}</p></div>
     </div>
+    {% if campaign.strategy.demand_hypotheses %}
+    <p class="help" style="margin-top:14px;">Demand hypotheses</p>
+    <div class="rc-pills">{% for item in campaign.strategy.demand_hypotheses %}<span class="rc-pill">{{ item }}</span>{% endfor %}</div>
+    {% endif %}
+    {% if campaign.strategy.experiments %}
+    <p class="help" style="margin-top:14px;">Experiments</p>
+    <ul>{% for item in campaign.strategy.experiments %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
     {% if campaign.strategy.pillars %}
     <div class="rc-pills" style="margin-top:12px;">{% for pillar in campaign.strategy.pillars %}<span class="rc-pill">{{ pillar }}</span>{% endfor %}</div>
+    {% endif %}
+    {% if campaign.strategy_sources %}
+    <p class="help" style="margin-top:16px;">Evidence base</p>
+    <ul>{% for source in campaign.strategy_sources %}<li><a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.title }}</a></li>{% endfor %}</ul>
     {% endif %}
   </section>
   {% endif %}

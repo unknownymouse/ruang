@@ -22,7 +22,7 @@ Proyek ini merupakan fork dan pengembangan dari [BrightBean Studio](https://gith
 
 | Area | Kapabilitas |
 |---|---|
-| **Brand Brain** | Tone, persona, produk, audiens, aturan, forbidden topics, bahasa, dan knowledge base per workspace. |
+| **Brand Brain** | Tone, persona, produk, audiens, aturan, forbidden topics, bahasa, knowledge base, traffic goals, topic seeds, dan conversion actions per workspace. |
 | **Brief → campaign** | AI menyusun north star, narrative, content pillars, channel roles, dan kalender hingga 30 item per generasi. |
 | **Caption native** | Caption utama dan tiga variasi untuk Instagram, TikTok, LinkedIn, dan channel terhubung lainnya. |
 | **Image & video pipeline** | Visual prompt, video script, persistent media job, retry, status, dan webhook vendor-neutral. |
@@ -31,7 +31,7 @@ Proyek ini merupakan fork dan pengembangan dari [BrightBean Studio](https://gith
 | **Optimization loop** | Snapshot analytics 30 hari dimasukkan sebagai sinyal pada campaign berikutnya. |
 | **AI operations** | Ordered provider fallback, prompt version, audit log, usage token, estimasi biaya, quota bulanan, dan moderation. |
 | **Multi-provider** | OpenAI, Anthropic, Gemini, endpoint OpenAI-compatible, serta demo provider lokal. |
-| **Social stack** | Facebook, Instagram, LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky, Mastodon, Google Business, dan DEV.to. |
+| **Social stack** | Facebook, Instagram, LinkedIn, TikTok, YouTube, Pinterest, Threads, X, Bluesky, Mastodon, Google Business, dan DEV.to. |
 
 ## Approval dan publishing flow
 
@@ -112,6 +112,25 @@ python manage.py process_tasks
 ```
 
 Worker memproses AI campaign, media generation job, publisher retry, analytics sync, notification, dan background operation lainnya.
+
+## Traffic strategy
+
+Brand Brain stores traffic goals, operator-verified topic seeds, and conversion
+actions. Ruang combines these with its versioned evidence playbook and 30-day
+analytics feedback to generate demand hypotheses, native distribution,
+experiments, and success metrics. See `docs/content-traffic-strategy.md`.
+
+## X configuration
+
+Create an OAuth 2.0 Web App in the X Developer Console, register the Ruang
+callback URL, and enable read/write permissions. Ruang uses Authorization Code
+with PKCE and requests `tweet.read`, `tweet.write`, `users.read`, and
+`offline.access`.
+
+```env
+PLATFORM_X_CLIENT_ID=
+PLATFORM_X_CLIENT_SECRET=
+```
 
 ## Konfigurasi AI
 

@@ -68,6 +68,8 @@ PLATFORM_METRICS: dict[str, list[str]] = {
     "google_business": ["impressions", "clicks"],
     # Mastodon: only favourites/reblogs/replies from the public status record.
     "mastodon": ["likes", "reposts", "replies"],
+    # X user-context metrics: impressions plus public conversation and link actions.
+    "x": ["impressions", "likes", "replies", "reposts", "clicks", "followers", "engagement"],
 }
 
 # The "hero" metric each platform defaults the big chart and table sort to.
@@ -84,6 +86,7 @@ PLATFORM_PRIMARY: dict[str, str] = {
     "pinterest": "impressions",
     "google_business": "impressions",
     "mastodon": "likes",
+    "x": "impressions",
 }
 
 # Brand-orange override for charts; per-platform colors used as a tweak.
@@ -100,6 +103,7 @@ PLATFORM_COLOR: dict[str, str] = {
     "pinterest": "#BD081C",
     "google_business": "#4285F4",
     "mastodon": "#6364FF",
+    "x": "#000000",
 }
 
 # Metrics that contribute to engagement rate (numerator).

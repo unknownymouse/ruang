@@ -686,6 +686,7 @@ def _media_kind(post: PlatformPost) -> str:
         "pinterest": "Pin",
         "google_business": "Post",
         "mastodon": "Post",
+        "x": "Post",
     }
     return platform_default.get(post.social_account.platform, "Post")
 

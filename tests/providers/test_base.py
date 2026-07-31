@@ -25,6 +25,7 @@ class TestProviderRegistry:
             "google_business",
             "mastodon",
             "devto",
+            "x",
         }
         assert set(PROVIDER_REGISTRY.keys()) == expected
 
@@ -138,6 +139,11 @@ class TestProviderMetadata:
     def test_threads_max_caption(self):
         p = get_provider("threads")
         assert p.max_caption_length == 500
+
+    def test_x_max_caption_and_pkce(self):
+        p = get_provider("x")
+        assert p.max_caption_length == 280
+        assert p.uses_pkce is True
 
     def test_bluesky_auth_type_is_session(self):
         p = get_provider("bluesky")
