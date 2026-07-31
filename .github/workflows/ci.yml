@@ -78,7 +78,7 @@ jobs:
         # broke main CI on 2026-06-10 (run 27262568530).
         image: public.ecr.aws/docker/library/postgres:16-alpine
         env:
-          POSTGRES_DB: brightbean_test
+          POSTGRES_DB: ruang_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -91,7 +91,7 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: config.settings.test
       SECRET_KEY: test-secret-key-not-for-production
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/brightbean_test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ruang_test
       DB_HOST: localhost
       DB_USER: postgres
       DB_PASSWORD: postgres
@@ -132,7 +132,7 @@ jobs:
         with:
           context: .
           push: false
-          tags: brightbean:latest
+          tags: ruang:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

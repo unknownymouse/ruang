@@ -1,8 +1,8 @@
 {
-  "name": "Brightbean",
-  "description": "Open-source social media management platform",
-  "repository": "https://github.com/brightbeanxyz/brightbean-studio",
-  "keywords": ["django", "social-media", "management"],
+  "name": "Ruang",
+  "description": "AI-powered content operations and social publishing platform",
+  "repository": "https://github.com/unknownymouse/ruang",
+  "keywords": ["django", "social-media", "management", "ai", "content-automation"],
   "formation": {
     "web": {
       "quantity": 1,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from .base import SocialProvider
 from .exceptions import OAuthError, PublishError
@@ -97,15 +97,17 @@ class MastodonProvider(SocialProvider):
         Returns a dict with ``client_id`` and ``client_secret``.
         This only needs to be called once per instance.
         """
+        callback = urlsplit(redirect_uri)
+        website = f"{callback.scheme}://{callback.netloc}"
         url = f"{instance_url.rstrip('/')}/api/v1/apps"
         resp = self._request(
             "POST",
             url,
             json={
-                "client_name": "Brightbean",
+                "client_name": "Ruang",
                 "redirect_uris": redirect_uri,
                 "scopes": " ".join(self.required_scopes),
-                "website": "https://brightbean.xyz",
+                "website": website,
             },
         )
         data = resp.json()

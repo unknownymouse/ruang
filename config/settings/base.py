@@ -1,3 +1,4 @@
+from decimal import Decimal
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -71,6 +72,7 @@ LOCAL_APPS = [
     # so self-hosters who don't set the Intelligence env vars get no
     # Stripe / billing surface at all.
     "apps.intelligence",
+    "apps.ai_automation",
     "apps.api_keys",
     "apps.api",
     "apps.mcp",
@@ -111,6 +113,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.common.context_processors.brand_context",
                 "apps.notifications.context_processors.unread_notification_count",
                 "apps.common.context_processors.sidebar_context",
                 "apps.onboarding.context_processors.onboarding_checklist",
@@ -140,7 +143,7 @@ else:
 
 # Database
 DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres://postgres:postgres@localhost:5432/brightbean"),
+    "default": env.db("DATABASE_URL", default="postgres://postgres:postgres@localhost:5432/ruang"),
 }
 
 # Custom user model
@@ -469,7 +472,7 @@ MCP_PUBLIC_BASE_URL = env("MCP_PUBLIC_BASE_URL", default=APP_URL).rstrip("/")
 MCP_OAUTH_ISSUER_URL = env("MCP_OAUTH_ISSUER_URL", default=APP_URL).rstrip("/")
 
 OAUTH2_PROVIDER = {
-    "SCOPES": {"mcp": "Call BrightBean Studio MCP tools on your behalf"},
+    "SCOPES": {"mcp": "Call Ruang MCP tools on your behalf"},
     "DEFAULT_SCOPES": ["mcp"],
     "PKCE_REQUIRED": True,
     # Restrict ``code_challenge_method`` to ``S256``. django-oauth-toolkit
@@ -550,3 +553,33 @@ if INTELLIGENCE_ENABLED:
                 f"localhost / 127.0.0.1 dev tunnels) — current value would "
                 f"leak Intelligence API keys in transit."
             )
+
+# Ruang AI automation: ordered text-provider fallback, configurable quotas,
+# and a vendor-neutral image/video generation webhook.
+RUANG_AI_PROVIDERS = [value.strip() for value in env.list("RUANG_AI_PROVIDERS", default=["demo"]) if value.strip()]
+RUANG_OPENAI_API_KEY = env("RUANG_OPENAI_API_KEY", default="")
+RUANG_OPENAI_BASE_URL = env("RUANG_OPENAI_BASE_URL", default="https://api.openai.com/v1")
+RUANG_OPENAI_MODEL = env("RUANG_OPENAI_MODEL", default="gpt-5.4-mini")
+RUANG_ANTHROPIC_API_KEY = env("RUANG_ANTHROPIC_API_KEY", default="")
+RUANG_ANTHROPIC_MODEL = env("RUANG_ANTHROPIC_MODEL", default="claude-sonnet-5")
+RUANG_GEMINI_API_KEY = env("RUANG_GEMINI_API_KEY", default="")
+RUANG_GEMINI_MODEL = env("RUANG_GEMINI_MODEL", default="gemini-3.6-flash")
+
+# Any OpenAI-compatible endpoint (local vLLM/Ollama gateway or gateway SaaS).
+RUANG_COMPATIBLE_API_KEY = env("RUANG_COMPATIBLE_API_KEY", default="")
+RUANG_COMPATIBLE_BASE_URL = env("RUANG_COMPATIBLE_BASE_URL", default="")
+RUANG_COMPATIBLE_MODEL = env("RUANG_COMPATIBLE_MODEL", default="")
+RUANG_AI_MONTHLY_TOKEN_LIMIT = env.int("RUANG_AI_MONTHLY_TOKEN_LIMIT", default=1_000_000)
+RUANG_AI_MONTHLY_COST_LIMIT_USD = Decimal(env("RUANG_AI_MONTHLY_COST_LIMIT_USD", default="50.00"))
+
+# Operator-maintained price book, in USD per one million tokens:
+# {"model-name": {"input": 1.0, "output": 4.0}}
+RUANG_AI_COSTS = env.json("RUANG_AI_COSTS_JSON", default={})
+
+# This endpoint can front Fal, Replicate, ComfyUI, Runway, or an internal
+# orchestration service, keeping the content workflow vendor-neutral.
+RUANG_MEDIA_WEBHOOK_URL = env("RUANG_MEDIA_WEBHOOK_URL", default="")
+RUANG_MEDIA_WEBHOOK_TOKEN = env("RUANG_MEDIA_WEBHOOK_TOKEN", default="")
+RUANG_SUPPORT_EMAIL = env("RUANG_SUPPORT_EMAIL", default="support@yourdomain.com")
+RUANG_TERMS_URL = env("RUANG_TERMS_URL", default="https://yourdomain.com/terms")
+RUANG_PRIVACY_URL = env("RUANG_PRIVACY_URL", default="https://yourdomain.com/privacy")
