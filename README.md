@@ -252,12 +252,24 @@ docker compose --env-file .env -f docker-compose.prod.yml up -d --build
 ```
 
 Checklist DNS, secret, firewall, superuser, health check, update, dan backup ada
-di [`docs/deployment-vps.md`](docs/deployment-vps.md).
+di [`docs/deployment-vps.md`](docs/deployment-vps.md). Deployment production
+gagal tertutup jika identitas legal, URL Terms/Privacy, source revision AGPL,
+retention, atau disclosure subprocessor masih berupa placeholder.
 
 Semua integrasi social menggunakan official first-party APIs dan credential Anda sendiri; tidak ada aggregator sebagai perantara.
 
 ## Lisensi dan upstream
 
-Ruang menggunakan [GNU Affero General Public License v3.0](LICENSE). Jika menjalankan versi modifikasi sebagai network service, pastikan kewajiban source-disclosure AGPL dipenuhi.
+Ruang menggunakan [GNU Affero General Public License v3.0](LICENSE). Pengguna
+jaringan memperoleh tautan Corresponding Source untuk commit yang sedang
+dijalankan dari footer dan `/legal/open-source/`. Operator wajib mengatur
+`RUANG_SOURCE_CODE_REVISION` ke hasil `git rev-parse HEAD` pada setiap
+deployment, membangun hanya dari worktree bersih, dan mempublikasikan seluruh
+source modifikasi yang tercakup AGPL.
 
 Upstream: [brightbeanxyz/brightbean-studio](https://github.com/brightbeanxyz/brightbean-studio).
+
+Baseline Terms, Privacy, pelindungan data, PSE/PMSE, dan operasi kepatuhan
+didokumentasikan di [`docs/legal-compliance.md`](docs/legal-compliance.md).
+Dokumen ini bukan pengganti review penasihat hukum untuk badan usaha dan
+praktik aktual operator.

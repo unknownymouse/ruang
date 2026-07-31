@@ -1,7 +1,8 @@
 from allauth.account.signals import user_signed_up
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import timezone
+
+from .legal import record_current_legal_acceptance
 
 
 def provision_organization_and_workspace(user):
@@ -114,6 +115,8 @@ def create_organization_on_signup(sender, request, user, **kwargs):
                         Workspace.objects.filter(organization=org).delete()
                         org.delete()
 
+                if not kwargs.get("sociallogin"):
+                    record_current_legal_acceptance(user, source="email_signup")
                 return  # Done - user is now in the invited org only
         except Invitation.DoesNotExist:
             pass  # Fall through to default provisioning
@@ -130,8 +133,7 @@ def create_organization_on_signup(sender, request, user, **kwargs):
     # Email signups see ToS text on the signup form, so auto-accept.
     # Social signups (Google OAuth) will be redirected to a dedicated ToS page.
     if not kwargs.get("sociallogin"):
-        user.tos_accepted_at = timezone.now()
-        user.save(update_fields=["tos_accepted_at"])
+        record_current_legal_acceptance(user, source="email_signup")
 
 
 @receiver(post_save, sender="accounts.User")

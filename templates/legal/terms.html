@@ -1,0 +1,108 @@
+{% extends "legal/base.html" %}
+{% block title %}Terms of Service{% endblock %}
+{% block legal_content %}
+<h1>Terms of Service</h1>
+<p class="legal-meta">Versi {{ RUANG_TERMS_VERSION }} · Berlaku {{ RUANG_LEGAL_EFFECTIVE_DATE }}</p>
+
+<h2>1. Operator dan kontak</h2>
+<p>
+    Layanan Ruang ("Layanan") dioperasikan oleh <strong>{{ RUANG_LEGAL_ENTITY_NAME }}</strong>,
+    beralamat di {{ RUANG_LEGAL_ENTITY_ADDRESS }}, {{ RUANG_LEGAL_COUNTRY }} ("kami").
+    Pertanyaan layanan dapat dikirim ke <a href="mailto:{{ RUANG_SUPPORT_EMAIL }}">{{ RUANG_SUPPORT_EMAIL }}</a>
+    dan pertanyaan privasi ke <a href="mailto:{{ RUANG_PRIVACY_EMAIL }}">{{ RUANG_PRIVACY_EMAIL }}</a>.
+</p>
+
+<h2>2. Persetujuan dan kelayakan</h2>
+<p>
+    Dengan membuat akun atau menggunakan Layanan, Anda menyatakan telah membaca dan menyetujui Terms ini.
+    Anda harus memiliki kecakapan hukum atau kewenangan yang sah untuk bertindak bagi organisasi yang Anda wakili.
+    Layanan tidak ditujukan untuk anak yang belum dapat memberikan persetujuan yang sah tanpa wali.
+</p>
+
+<h2>3. Akun dan keamanan</h2>
+<ul>
+    <li>Berikan informasi yang akurat dan jaga kerahasiaan kredensial, token, serta kunci API.</li>
+    <li>Anda bertanggung jawab atas aktivitas akun sampai kami menerima laporan akses tidak sah.</li>
+    <li>Segera laporkan insiden ke {{ RUANG_SUPPORT_EMAIL }} dan cabut koneksi platform yang terdampak.</li>
+</ul>
+
+<h2>4. Fungsi AI dan tanggung jawab manusia</h2>
+<p>
+    Ruang dapat menghasilkan strategi, teks, gambar, video, prediksi, atau rekomendasi dengan AI. Keluaran dapat
+    keliru, bias, tidak lengkap, atau mirip dengan materi pihak lain. Ruang menyediakan alur persetujuan manusia:
+    Anda wajib memeriksa fakta, hak kekayaan intelektual, izin model/properti, klaim iklan, disclosure AI,
+    kesesuaian merek, dan aturan platform sebelum publikasi.
+</p>
+<p>
+    Konten yang dihasilkan atau dimodifikasi AI harus diberi label atau keterangan yang diwajibkan hukum dan
+    kebijakan platform. Ruang bukan pengganti nasihat hukum, medis, finansial, atau profesional.
+</p>
+
+<h2>5. Konten Anda dan koneksi platform</h2>
+<p>
+    Anda tetap memiliki konten yang Anda unggah. Anda memberi kami lisensi terbatas, non-eksklusif, dan hanya
+    selama diperlukan untuk menyimpan, memproses, menghasilkan variasi, menganalisis, serta mempublikasikan konten
+    sesuai instruksi Anda. Anda menjamin memiliki hak dan izin yang diperlukan.
+</p>
+<p>
+    Koneksi ke Instagram, TikTok, LinkedIn, X, dan layanan lain tunduk juga pada terms, kebijakan developer,
+    iklan, dan komunitas masing-masing platform. Fitur direct publishing dapat berubah atau berhenti karena
+    review aplikasi, izin akun, rate limit, atau perubahan API pihak ketiga.
+</p>
+
+<h2>6. Penggunaan yang dilarang</h2>
+<p>Anda tidak boleh menggunakan Ruang untuk:</p>
+<ul>
+    <li>melanggar hukum, hak cipta, merek, privasi, perlindungan konsumen, atau hak publisitas;</li>
+    <li>penipuan, impersonasi, spam, manipulasi engagement, disinformasi berbahaya, atau dark pattern;</li>
+    <li>konten eksploitasi seksual anak, terorisme, ancaman, doxxing, kebencian, atau instruksi kejahatan;</li>
+    <li>menghindari moderation, quota, approval, rate limit, atau kontrol keamanan;</li>
+    <li>mengunggah data sensitif yang tidak diperlukan atau data pihak lain tanpa dasar pemrosesan yang sah;</li>
+    <li>melatih, mengekstrak, atau menyerang model/sistem dengan cara yang tidak diizinkan.</li>
+</ul>
+<p>Kami dapat menahan publikasi, membatasi, atau menangguhkan akun secara proporsional untuk mencegah kerugian atau memenuhi hukum.</p>
+
+<h2>7. Biaya dan layanan berbayar</h2>
+<p>
+    Jika paket berbayar ditawarkan, harga, mata uang, pajak, periode tagihan, auto-renewal, batas penggunaan,
+    dan kebijakan pembatalan harus ditampilkan sebelum transaksi. Biaya provider AI atau platform dapat dihitung
+    terpisah jika dinyatakan pada halaman pemesanan. Bukti transaksi dan mekanisme pengaduan disediakan sesuai hukum.
+</p>
+
+<h2>8. Kekayaan intelektual dan open source</h2>
+<p>
+    Software Ruang merupakan modifikasi dari BrightBean Studio dan dilisensikan di bawah GNU Affero General Public
+    License v3.0. Pengguna melalui jaringan dapat memperoleh Corresponding Source dari
+    <a href="{{ RUANG_DEPLOYED_SOURCE_URL }}" rel="noopener noreferrer">source code versi yang sedang digunakan</a>.
+    Lisensi software tidak memberikan hak atas merek dagang Ruang, data pengguna lain, atau layanan pihak ketiga.
+</p>
+
+<h2>9. Moderation, keluhan, dan koreksi</h2>
+<p>
+    Anda dapat melaporkan keluaran AI, pelanggaran, atau hasil yang merugikan melalui {{ RUANG_SUPPORT_EMAIL }}.
+    Kami dapat meminta informasi untuk verifikasi, meninjau log yang relevan, mengoreksi keluaran/metadata,
+    menahan publikasi, atau meneruskan permintaan kepada provider/platform yang berwenang.
+</p>
+
+<h2>10. Pengakhiran dan data</h2>
+<p>
+    Anda dapat mengekspor data akun dan menghapus akun dari Settings. Penghapusan tidak selalu seketika pada backup,
+    catatan keamanan, bukti persetujuan pseudonim, transaksi, atau data yang wajib dipertahankan. Jika Anda satu-satunya
+    owner organisasi, kepemilikan harus dialihkan atau organisasi dihapus terlebih dahulu.
+</p>
+
+<h2>11. Ketersediaan dan batas tanggung jawab</h2>
+<p>
+    Kami berupaya menyediakan Layanan secara aman, tetapi tidak menjamin keluaran AI, jangkauan konten, uptime,
+    kompatibilitas API, atau hasil komersial tertentu. Sepanjang diizinkan hukum, tanggung jawab dibatasi secara wajar
+    pada kerugian langsung yang terbukti. Pembatasan ini tidak berlaku untuk tanggung jawab yang tidak boleh dibatasi,
+    termasuk kesengajaan, kelalaian berat, atau hak konsumen wajib.
+</p>
+
+<h2>12. Perubahan dan hukum yang berlaku</h2>
+<p>
+    Perubahan material akan diberi versi baru dan meminta persetujuan ulang. Terms ini ditafsirkan menurut hukum
+    Republik Indonesia. Sengketa diupayakan melalui penyelesaian langsung terlebih dahulu tanpa menghilangkan hak
+    pengguna untuk mengakses mekanisme pengaduan atau forum yang diwajibkan hukum.
+</p>
+{% endblock %}

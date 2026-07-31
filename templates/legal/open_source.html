@@ -1,0 +1,33 @@
+{% extends "legal/base.html" %}
+{% block title %}Open Source Notice{% endblock %}
+{% block legal_content %}
+<h1>Open Source & AGPL Notice</h1>
+<p class="legal-meta">Deployment revision: <code>{{ RUANG_SOURCE_CODE_REVISION }}</code></p>
+<p>
+    Ruang adalah software berlisensi <strong>GNU Affero General Public License v3.0</strong>.
+    Jika Anda berinteraksi dengan versi yang dimodifikasi melalui jaringan, Anda berhak memperoleh
+    Corresponding Source dari versi tersebut.
+</p>
+<p class="legal-note">
+    <a href="{{ RUANG_DEPLOYED_SOURCE_URL }}" rel="noopener noreferrer">
+        Download/view Corresponding Source untuk deployment ini
+    </a>
+</p>
+<h2>Attribution</h2>
+<p>
+    Ruang merupakan fork dan modifikasi dari
+    <a href="https://github.com/brightbeanxyz/brightbean-studio" rel="noopener noreferrer">BrightBean Studio</a>.
+    Nama, logo, konfigurasi deployment, fitur AI automation, integrasi X, serta perubahan lain merupakan modifikasi.
+</p>
+<h2>Lisensi dan merek</h2>
+<p>
+    Ketentuan lengkap tersedia pada file <code>LICENSE</code> di repository source. Lisensi berlaku untuk software,
+    bukan otomatis untuk merek Ruang, konten pengguna, credential, atau layanan/API pihak ketiga.
+    Software diberikan tanpa jaminan sebagaimana dijelaskan dalam lisensi.
+</p>
+<h2>Meminta source</h2>
+<p>
+    Jika tautan source tidak sesuai dengan revision yang sedang berjalan, laporkan ke
+    <a href="mailto:{{ RUANG_SUPPORT_EMAIL }}">{{ RUANG_SUPPORT_EMAIL }}</a> dengan URL deployment dan waktu akses.
+</p>
+{% endblock %}

@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
 </head>
 <body>
-<main class="auth-bg min-h-screen flex items-center justify-center py-12 px-4" style="font-family: var(--font-body);">
+<main class="auth-bg min-h-screen flex flex-col items-center justify-center py-12 px-4" style="font-family: var(--font-body);">
     <div class="w-full max-w-md px-4">
         <!-- Logo & Header -->
         <div class="text-center mb-8">
@@ -47,22 +47,36 @@
             <form method="post">
                 {% csrf_token %}
 
-                <label for="id_agree" class="btn-surface-1 flex items-start gap-3 cursor-pointer mb-6 p-3 rounded-lg transition-colors" style="border: 1.5px solid var(--border);">
+                <label for="id_agree_terms" class="btn-surface-1 flex items-start gap-3 cursor-pointer mb-3 p-3 rounded-lg transition-colors" style="border: 1.5px solid var(--border);">
                     <input type="checkbox"
-                           name="agree"
-                           id="id_agree"
+                           name="agree_terms"
+                           id="id_agree_terms"
+                           required
                            class="w-4 h-4 rounded mt-0.5 flex-shrink-0 cursor-pointer accent-[var(--primary)]"
                            style="border-color: var(--border);">
                     <span class="text-sm" style="color: var(--text-primary); line-height: 1.5;">
-                        I agree to the
+                        Saya telah membaca dan menyetujui
                         <a href="{{ RUANG_TERMS_URL }}" target="_blank" rel="noopener" class="font-semibold underline hover:no-underline" style="color: var(--primary);">Terms of Service</a>
-                        and
+                        versi {{ terms_version }}.
+                    </span>
+                </label>
+
+                <label for="id_agree_privacy" class="btn-surface-1 flex items-start gap-3 cursor-pointer mb-6 p-3 rounded-lg transition-colors" style="border: 1.5px solid var(--border);">
+                    <input type="checkbox"
+                           name="agree_privacy"
+                           id="id_agree_privacy"
+                           required
+                           class="w-4 h-4 rounded mt-0.5 flex-shrink-0 cursor-pointer accent-[var(--primary)]"
+                           style="border-color: var(--border);">
+                    <span class="text-sm" style="color: var(--text-primary); line-height: 1.5;">
+                        Saya telah membaca
                         <a href="{{ RUANG_PRIVACY_URL }}" target="_blank" rel="noopener" class="font-semibold underline hover:no-underline" style="color: var(--primary);">Privacy Policy</a>
+                        versi {{ privacy_version }} dan memahami bagaimana data saya diproses.
                     </span>
                 </label>
 
                 <button type="submit" class="btn-brand">
-                    Continue
+                    Setujui dan lanjutkan
                 </button>
             </form>
         </div>
@@ -72,6 +86,7 @@
             <a href="{% url 'accounts:logout' %}" class="font-semibold hover:underline" style="color: var(--primary);">Sign out</a>
         </p>
     </div>
+    {% include "partials/_legal_footer.html" %}
 </main>
 </body>
 </html>

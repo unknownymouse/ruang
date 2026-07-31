@@ -584,6 +584,35 @@ RUANG_AI_COSTS = env.json("RUANG_AI_COSTS_JSON", default={})
 # orchestration service, keeping the content workflow vendor-neutral.
 RUANG_MEDIA_WEBHOOK_URL = env("RUANG_MEDIA_WEBHOOK_URL", default="")
 RUANG_MEDIA_WEBHOOK_TOKEN = env("RUANG_MEDIA_WEBHOOK_TOKEN", default="")
-RUANG_SUPPORT_EMAIL = env("RUANG_SUPPORT_EMAIL", default="support@yourdomain.com")
-RUANG_TERMS_URL = env("RUANG_TERMS_URL", default="https://yourdomain.com/terms")
-RUANG_PRIVACY_URL = env("RUANG_PRIVACY_URL", default="https://yourdomain.com/privacy")
+
+# Public operator identity and versioned legal documents. Production checks
+# require the placeholders to be replaced before migrations can run.
+RUANG_LEGAL_ENTITY_NAME = env("RUANG_LEGAL_ENTITY_NAME", default="Ruang Development Operator")
+RUANG_LEGAL_ENTITY_ADDRESS = env("RUANG_LEGAL_ENTITY_ADDRESS", default="Set operator address before production")
+RUANG_LEGAL_COUNTRY = env("RUANG_LEGAL_COUNTRY", default="Indonesia")
+RUANG_SUPPORT_EMAIL = env("RUANG_SUPPORT_EMAIL", default="support@localhost")
+RUANG_PRIVACY_EMAIL = env("RUANG_PRIVACY_EMAIL", default=RUANG_SUPPORT_EMAIL)
+RUANG_TERMS_VERSION = env("RUANG_TERMS_VERSION", default="2026-07-31")
+RUANG_PRIVACY_VERSION = env("RUANG_PRIVACY_VERSION", default="2026-07-31")
+RUANG_LEGAL_EFFECTIVE_DATE = env("RUANG_LEGAL_EFFECTIVE_DATE", default="31 Juli 2026")
+RUANG_TERMS_URL = env("RUANG_TERMS_URL", default=f"{APP_URL.rstrip('/')}/legal/terms/")
+RUANG_PRIVACY_URL = env("RUANG_PRIVACY_URL", default=f"{APP_URL.rstrip('/')}/legal/privacy/")
+
+# AGPL section 13 requires network users to receive a prominent offer for the
+# Corresponding Source of the exact deployed version.
+RUANG_SOURCE_CODE_URL = env("RUANG_SOURCE_CODE_URL", default="https://github.com/unknownymouse/ruang")
+RUANG_SOURCE_CODE_REVISION = env("RUANG_SOURCE_CODE_REVISION", default="development")
+RUANG_DEPLOYED_SOURCE_URL = env(
+    "RUANG_DEPLOYED_SOURCE_URL",
+    default=(
+        f"{RUANG_SOURCE_CODE_URL.rstrip('/')}/tree/{RUANG_SOURCE_CODE_REVISION}"
+        if RUANG_SOURCE_CODE_REVISION != "development"
+        else RUANG_SOURCE_CODE_URL
+    ),
+)
+
+RUANG_PRIVACY_AUDIT_KEY = env("RUANG_PRIVACY_AUDIT_KEY", default=SECRET_KEY)
+RUANG_SUBPROCESSORS = env.json("RUANG_SUBPROCESSORS_JSON", default=[])
+RUANG_ACCOUNT_RECORD_RETENTION_DAYS = env.int("RUANG_ACCOUNT_RECORD_RETENTION_DAYS", default=1825)
+RUANG_SECURITY_LOG_RETENTION_DAYS = env.int("RUANG_SECURITY_LOG_RETENTION_DAYS", default=180)
+RUANG_BACKUP_RETENTION_DAYS = env.int("RUANG_BACKUP_RETENTION_DAYS", default=30)

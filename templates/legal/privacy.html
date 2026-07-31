@@ -1,0 +1,108 @@
+{% extends "legal/base.html" %}
+{% block title %}Privacy Policy{% endblock %}
+{% block legal_content %}
+<h1>Privacy Policy</h1>
+<p class="legal-meta">Versi {{ RUANG_PRIVACY_VERSION }} · Berlaku {{ RUANG_LEGAL_EFFECTIVE_DATE }}</p>
+<p>
+    Kebijakan ini menjelaskan pemrosesan data pribadi oleh <strong>{{ RUANG_LEGAL_ENTITY_NAME }}</strong>
+    sebagai pengendali data untuk pengoperasian Ruang. Alamat operator: {{ RUANG_LEGAL_ENTITY_ADDRESS }},
+    {{ RUANG_LEGAL_COUNTRY }}. Kontak privasi: <a href="mailto:{{ RUANG_PRIVACY_EMAIL }}">{{ RUANG_PRIVACY_EMAIL }}</a>.
+</p>
+
+<h2>1. Data yang diproses</h2>
+<ul>
+    <li><strong>Akun:</strong> nama, email, avatar, organisasi, role, dan bukti persetujuan dokumen.</li>
+    <li><strong>Keamanan:</strong> alamat IP, perangkat, sesi, audit log, kegagalan login, dan tindakan approval.</li>
+    <li><strong>Konten:</strong> Brand Brain, brief, prompt, caption, media, kalender, komentar, dan feedback.</li>
+    <li><strong>Integrasi:</strong> identifier akun sosial, scope, token terenkripsi, status publikasi, dan metrik.</li>
+    <li><strong>AI dan penggunaan:</strong> input/output model, versi prompt, provider, token, biaya, moderation, quota, dan error.</li>
+    <li><strong>Komersial:</strong> paket, transaksi, invoice, serta catatan dukungan apabila fitur berbayar digunakan.</li>
+</ul>
+<p>Kami meminta agar Anda tidak memasukkan data sensitif ke prompt atau konten kecuali benar-benar perlu dan memiliki dasar yang sah.</p>
+
+<h2>2. Tujuan dan dasar pemrosesan</h2>
+<p>
+    Data digunakan untuk menyediakan kontrak layanan, mengautentikasi pengguna, menjalankan automasi yang diminta,
+    mencegah penyalahgunaan, memberi dukungan, mengukur performa, memenuhi kewajiban hukum, dan meningkatkan fitur.
+    Dasarnya dapat berupa pelaksanaan kontrak, persetujuan, kewajiban hukum, atau kepentingan sah yang telah dinilai,
+    sesuai konteks dan hukum yang berlaku. Persetujuan dapat ditarik tanpa memengaruhi pemrosesan sah sebelumnya.
+</p>
+
+<h2>3. AI, publikasi, dan keputusan otomatis</h2>
+<p>
+    Prompt dan konten dapat dikirim ke provider AI yang dipilih operator untuk menghasilkan keluaran. Konten yang
+    disetujui dapat dikirim ke platform sosial atas instruksi pengguna. Ruang tidak dimaksudkan membuat keputusan
+    yang menimbulkan akibat hukum atau dampak signifikan semata-mata secara otomatis; approval manusia tersedia
+    sebelum publikasi. Kebijakan retention/training provider harus dikonfigurasi dan dinilai operator secara terpisah.
+</p>
+
+<h2>4. Penerima dan subprocessor</h2>
+<p>
+    Data dibagikan sebatas perlu kepada hosting, database, email, observability, AI/media, pembayaran, dan platform
+    sosial yang diaktifkan. Daftar yang dikonfigurasi operator:
+</p>
+{% if RUANG_SUBPROCESSORS %}
+<div style="overflow-x:auto;">
+<table class="legal-table">
+    <thead><tr><th>Provider</th><th>Tujuan</th><th>Lokasi</th><th>Kebijakan</th></tr></thead>
+    <tbody>
+    {% for item in RUANG_SUBPROCESSORS %}
+        <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.purpose }}</td>
+            <td>{{ item.location }}</td>
+            <td><a href="{{ item.privacy_url }}" rel="noopener noreferrer">Privacy</a></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="legal-note">Tidak ada subprocessor eksternal yang dikonfigurasi pada deployment ini.</p>
+{% endif %}
+<p>Kami tidak menjual data pribadi. Disclosure kepada penegak hukum hanya dilakukan apabila memiliki dasar yang sah.</p>
+
+<h2>5. Transfer lintas negara</h2>
+<p>
+    Provider dapat memproses data di luar Indonesia. Sebelum mengaktifkannya, operator harus menilai tingkat
+    perlindungan negara tujuan dan menerapkan perlindungan yang diwajibkan, termasuk perjanjian, persetujuan,
+    atau mekanisme transfer lain yang sesuai.
+</p>
+
+<h2>6. Retensi dan penghapusan</h2>
+<ul>
+    <li>Catatan akun/legal minimum: sampai {{ RUANG_ACCOUNT_RECORD_RETENTION_DAYS }} hari, jika diperlukan untuk klaim atau kewajiban.</li>
+    <li>Log keamanan: sampai {{ RUANG_SECURITY_LOG_RETENTION_DAYS }} hari, kecuali insiden memerlukan penyimpanan lebih lama.</li>
+    <li>Backup terenkripsi: rotasi sampai {{ RUANG_BACKUP_RETENTION_DAYS }} hari sebelum tertimpa.</li>
+    <li>Konten aktif: selama akun/organisasi memerlukannya; setelah penghapusan mengikuti antrean dan backup di atas.</li>
+</ul>
+<p>Operator harus menyesuaikan periode ini dengan kewajiban pajak, transaksi, sengketa, dan prinsip pembatasan penyimpanan.</p>
+
+<h2>7. Hak Anda</h2>
+<p>
+    Sesuai syarat hukum, Anda dapat meminta akses, salinan, perbaikan, pembatasan/penundaan, penghentian/penghapusan,
+    penarikan persetujuan, keberatan, dan mengajukan keluhan atau ganti rugi. Ekspor akun langsung tersedia di Settings.
+    Untuk permintaan lengkap, gunakan formulir Privacy & Data di Settings atau email {{ RUANG_PRIVACY_EMAIL }}.
+    Kami akan memverifikasi identitas dan dapat meminta rincian agar tidak mengungkap data kepada pihak yang salah.
+</p>
+
+<h2>8. Keamanan</h2>
+<p>
+    Kontrol teknis mencakup TLS, hashing password, token/field encryption, least privilege, audit log, approval,
+    rate limit, secret scan, backup, serta pembaruan keamanan. Tidak ada sistem yang bebas risiko. Jika terjadi
+    kegagalan perlindungan data, notifikasi kepada subjek data dan lembaga akan dilakukan paling lambat 3 x 24 jam
+    sejak diketahui apabila diwajibkan hukum, beserta dampak dan langkah penanganannya.
+</p>
+
+<h2>9. Anak dan data pihak lain</h2>
+<p>
+    Ruang bukan layanan untuk anak yang belum dapat memberi persetujuan sah. Jangan mengunggah data anak atau
+    pihak lain tanpa otoritas, pemberitahuan, dan dasar pemrosesan yang sesuai.
+</p>
+
+<h2>10. Perubahan</h2>
+<p>
+    Perubahan material akan diterbitkan dengan versi baru dan dapat memerlukan pengakuan/persetujuan ulang.
+    Riwayat penerimaan versi disimpan secara pseudonim untuk akuntabilitas.
+</p>
+{% endblock %}

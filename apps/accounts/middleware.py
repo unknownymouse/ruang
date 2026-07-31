@@ -1,5 +1,6 @@
 import hashlib
 
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -23,13 +24,14 @@ EXEMPT_PATH_PREFIXES = (
     "/accounts/google/",
     "/accounts/3rdparty/",
     "/health/",
+    "/legal/",
     "/static/",
     "/admin/",
 )
 
 
 class TosAcceptanceMiddleware:
-    """Redirect authenticated users to the ToS acceptance page if they haven't accepted yet."""
+    """Require acceptance of the currently deployed legal-document versions."""
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -38,7 +40,11 @@ class TosAcceptanceMiddleware:
         if (
             hasattr(request, "user")
             and request.user.is_authenticated
-            and request.user.tos_accepted_at is None
+            and (
+                request.user.tos_accepted_at is None
+                or request.user.tos_version != settings.RUANG_TERMS_VERSION
+                or request.user.privacy_version != settings.RUANG_PRIVACY_VERSION
+            )
             and not request.path.startswith(EXEMPT_PATH_PREFIXES)
         ):
             return redirect(reverse("accounts:accept_terms"))

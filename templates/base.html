@@ -894,6 +894,7 @@
                 <div class="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden">
                 {% block content %}{% endblock %}
                 </div>
+                {% include "partials/_legal_footer.html" %}
             </main>
         </div>
     </div>
@@ -902,8 +903,9 @@
     {% include "onboarding/partials/_checklist.html" %}
 
     {% else %}
-    <main class="auth-bg min-h-screen flex items-center justify-center py-12 px-4" style="font-family: var(--font-body);">
+    <main class="auth-bg min-h-screen flex flex-col items-center justify-center py-12 px-4" style="font-family: var(--font-body);">
         {% block auth_content %}{% endblock %}
+        {% include "partials/_legal_footer.html" %}
     </main>
     {% endif %}
 

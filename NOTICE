@@ -1,0 +1,20 @@
+Ruang
+=====
+
+Ruang is a modified fork of BrightBean Studio:
+https://github.com/brightbeanxyz/brightbean-studio
+
+The software and modifications are distributed under the GNU Affero General
+Public License, version 3.0. See LICENSE for the complete license text.
+
+Material modifications include the Ruang name and visual identity, AI content
+automation, Brand Brain, campaign/content planning, human approval, publishing
+and retry workflows, analytics feedback, provider abstraction, X integration,
+and the legal/privacy/deployment baseline.
+
+Operators providing a modified version over a network must keep a prominent
+link to the Corresponding Source for the exact deployed revision. Ruang exposes
+that offer through /legal/open-source/ and the application footer when
+RUANG_SOURCE_CODE_URL and RUANG_SOURCE_CODE_REVISION are configured.
+
+Third-party names, APIs, and trademarks belong to their respective owners.

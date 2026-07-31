@@ -22,10 +22,19 @@ RUN cd theme/static_src && npm ci && npm run build
 
 FROM python:3.12-slim AS runtime
 
+ARG RUANG_BUILD_REVISION=development
+ARG RUANG_SOURCE_CODE_URL=https://github.com/unknownymouse/ruang
+
+LABEL org.opencontainers.image.title="Ruang" \
+      org.opencontainers.image.source="${RUANG_SOURCE_CODE_URL}" \
+      org.opencontainers.image.revision="${RUANG_BUILD_REVISION}"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PORT=8000
+    PORT=8000 \
+    RUANG_SOURCE_CODE_URL="${RUANG_SOURCE_CODE_URL}" \
+    RUANG_SOURCE_CODE_REVISION="${RUANG_BUILD_REVISION}"
 
 WORKDIR /app
 

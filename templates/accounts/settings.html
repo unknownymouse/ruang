@@ -132,6 +132,71 @@
     </div>
     {% endif %}    
 
+    <hr class="my-10" style="border-color: var(--border);">
+
+    <!-- Privacy and data rights -->
+    <section aria-labelledby="privacy-data-heading">
+        <h3 id="privacy-data-heading" class="text-base font-semibold mb-1" style="color: var(--text-primary);">Privacy &amp; data</h3>
+        <p class="text-sm mb-5" style="color: var(--text-secondary); max-width: 560px;">
+            Unduh data akun langsung atau ajukan permintaan akses lengkap, koreksi, pembatasan,
+            keberatan, maupun penarikan persetujuan. Permintaan lengkap memerlukan verifikasi identitas.
+        </p>
+
+        <div class="flex flex-wrap gap-3 mb-6">
+            <a href="{% url 'accounts:data_export' %}"
+               class="btn-neutral-surface inline-flex items-center px-4 py-2 text-sm font-medium rounded-full"
+               style="border: 1px solid var(--border); color: var(--text-primary); background: var(--surface-0);">
+                Download account data (JSON)
+            </a>
+            <a href="{% url 'legal:privacy' %}"
+               class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full underline"
+               style="color: var(--primary);">
+                Read Privacy Policy
+            </a>
+        </div>
+
+        <form method="POST" class="space-y-4 p-4 rounded-xl" style="border: 1px solid var(--border); background: var(--surface-1);">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="privacy_request">
+            <div>
+                <label for="request_type" class="block text-sm font-semibold mb-2" style="color: var(--text-primary);">Request type</label>
+                <select id="request_type" name="request_type" required
+                        class="input-focus w-full px-3 py-2 text-sm rounded-lg outline-none"
+                        style="border: 1px solid var(--border); color: var(--text-primary); background: var(--surface-0);">
+                    <option value="">Select a request</option>
+                    <option value="access">Access or comprehensive export</option>
+                    <option value="correction">Correction</option>
+                    <option value="restriction">Restriction of processing</option>
+                    <option value="objection">Objection to processing</option>
+                    <option value="withdraw_consent">Withdraw consent</option>
+                    <option value="other">Other privacy request</option>
+                </select>
+            </div>
+            <div>
+                <label for="privacy_details" class="block text-sm font-semibold mb-2" style="color: var(--text-primary);">Details</label>
+                <textarea id="privacy_details" name="details" rows="3" maxlength="4000"
+                          placeholder="Describe the data or processing involved. Do not include passwords or API keys."
+                          class="input-focus w-full px-3 py-2 text-sm rounded-lg outline-none"
+                          style="border: 1px solid var(--border); color: var(--text-primary); background: var(--surface-0);"></textarea>
+            </div>
+            <button type="submit" class="btn-brand px-5 py-2 text-sm">Submit privacy request</button>
+        </form>
+
+        {% if privacy_requests %}
+        <div class="mt-5">
+            <p class="text-sm font-semibold mb-2" style="color: var(--text-primary);">Recent requests</p>
+            <ul class="space-y-2">
+                {% for privacy_request in privacy_requests %}
+                <li class="flex flex-wrap justify-between gap-2 text-xs p-3 rounded-lg" style="background: var(--surface-1); color: var(--text-secondary);">
+                    <span>{{ privacy_request.get_request_type_display }}</span>
+                    <span>{{ privacy_request.get_status_display }} · {{ privacy_request.submitted_at|date:"Y-m-d H:i" }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </section>
+
     <!-- Divider -->
     <hr class="my-10" style="border-color: var(--border);">
 
@@ -141,7 +206,8 @@
             <div>
                 <h3 class="text-base font-semibold mb-1" style="color: var(--text-primary);">Delete your account</h3>
                 <p class="text-sm" style="color: var(--text-secondary); max-width: 480px;">
-                    When you delete your account, you lose access to Ruang account services, and we permanently delete your personal data.
+                    Penghapusan mengakhiri akses dan menghapus data akun aktif. Backup berotasi, catatan transaksi/keamanan,
+                    permintaan privasi, dan bukti persetujuan pseudonim dapat disimpan terbatas sesuai Privacy Policy.
                 </p>
             </div>
 
@@ -175,7 +241,9 @@
                     <!-- Body -->
                     <div class="px-6 py-5">
                         <p class="text-sm" style="color: var(--text-secondary);">
-                            Are you sure you want to delete your account? This action is permanent and cannot be undone. You will lose access to all Ruang services, and your personal data will be permanently deleted.
+                            Yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan. File avatar dan relasi akun aktif
+                            akan dihapus; catatan minimum yang diwajibkan hukum atau diperlukan untuk keamanan dapat tetap
+                            disimpan selama periode yang dipublikasikan.
                         </p>
                     </div>
 

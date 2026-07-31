@@ -4,18 +4,25 @@ x-ruang-service: &ruang-service
   build:
     context: .
     dockerfile: Dockerfile
+    args:
+      RUANG_BUILD_REVISION: ${RUANG_SOURCE_CODE_REVISION:?Set RUANG_SOURCE_CODE_REVISION to git rev-parse HEAD}
+      RUANG_SOURCE_CODE_URL: ${RUANG_SOURCE_CODE_URL:?Set RUANG_SOURCE_CODE_URL to the public Corresponding Source repository}
   image: ruang-app:${RUANG_IMAGE_TAG:-latest}
   env_file:
     - .env
   environment:
     DJANGO_SETTINGS_MODULE: config.settings.production
     DATABASE_URL: postgresql://${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}
+    RUANG_SOURCE_CODE_REVISION: ${RUANG_SOURCE_CODE_REVISION:?Set RUANG_SOURCE_CODE_REVISION to git rev-parse HEAD}
   init: true
 
 services:
   migrate:
     <<: *ruang-service
-    command: python manage.py migrate --noinput
+    command:
+      - sh
+      - -c
+      - python manage.py check --deploy && exec python manage.py migrate --noinput
     depends_on:
       postgres:
         condition: service_healthy

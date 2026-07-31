@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Legal{% endblock %} - Ruang</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
+    <style>
+        body { margin: 0; color: #292524; background: #fafaf9; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+        .legal-wrap { width: min(100% - 2rem, 880px); margin-inline: auto; }
+        .legal-header { border-bottom: 1px solid #e7e5e4; background: rgba(255,255,255,.94); }
+        .legal-header-inner { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .legal-nav { display: flex; flex-wrap: wrap; gap: 1rem; font-size: .875rem; }
+        .legal-nav a, .legal-document a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; }
+        .legal-document { margin: 2rem auto 3rem; padding: clamp(1.25rem,4vw,3rem); background: white; border: 1px solid #e7e5e4; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+        .legal-document h1 { margin: 0 0 .5rem; font-size: clamp(1.8rem,5vw,2.5rem); line-height: 1.15; }
+        .legal-document h2 { margin: 2rem 0 .75rem; font-size: 1.25rem; }
+        .legal-document h3 { margin: 1.25rem 0 .5rem; font-size: 1rem; }
+        .legal-document p, .legal-document li { line-height: 1.72; }
+        .legal-document ul, .legal-document ol { padding-left: 1.25rem; }
+        .legal-meta, .legal-note { color: #57534e; font-size: .9rem; }
+        .legal-note { padding: 1rem; border-radius: .75rem; background: #f5f5f4; border: 1px solid #e7e5e4; }
+        .legal-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+        .legal-table th, .legal-table td { padding: .75rem; border: 1px solid #e7e5e4; text-align: left; vertical-align: top; }
+        .legal-footer { border-top: 1px solid #e7e5e4; padding: 1.25rem 0 2rem; color: #57534e; font-size: .8rem; }
+        @media (max-width: 640px) { .legal-header-inner { align-items: flex-start; flex-direction: column; padding-block: 1rem; } }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <div class="legal-wrap legal-header-inner">
+            <a href="/" aria-label="Ruang home" style="display:flex;align-items:center;gap:.65rem;color:#292524;text-decoration:none;font-weight:700;">
+                <img src="{% static 'img/ruang-logo.svg' %}" alt="" width="32" height="32">
+                Ruang
+            </a>
+            <nav class="legal-nav" aria-label="Dokumen legal">
+                <a href="{% url 'legal:terms' %}">Terms</a>
+                <a href="{% url 'legal:privacy' %}">Privacy</a>
+                <a href="{% url 'legal:open_source' %}">Open Source</a>
+                <a href="{{ RUANG_DEPLOYED_SOURCE_URL }}" rel="noopener noreferrer">Source code</a>
+            </nav>
+        </div>
+    </header>
+    <main class="legal-wrap">
+        <article class="legal-document">
+            {% block legal_content %}{% endblock %}
+        </article>
+    </main>
+    <footer class="legal-footer">
+        <div class="legal-wrap">
+            Dioperasikan oleh {{ RUANG_LEGAL_ENTITY_NAME }} ·
+            <a href="mailto:{{ RUANG_SUPPORT_EMAIL }}">{{ RUANG_SUPPORT_EMAIL }}</a> ·
+            <a href="{{ RUANG_DEPLOYED_SOURCE_URL }}" rel="noopener noreferrer">Corresponding Source (AGPL-3.0)</a>
+        </div>
+    </footer>
+</body>
+</html>
