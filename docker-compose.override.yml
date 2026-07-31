@@ -4,7 +4,7 @@ services:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ruang
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ruang}
 
   app:
     command: python manage.py runserver 0.0.0.0:8000
@@ -12,14 +12,14 @@ services:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ruang
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ruang}
 
   worker:
     volumes:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ruang
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ruang}
 
   tailwind:
     image: node:20-slim

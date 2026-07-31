@@ -1,0 +1,50 @@
+.git
+.github
+.codex
+.agents
+
+# Secrets and machine-local configuration must never enter an image layer.
+.env
+.env.*
+!.env.example
+
+# Local runtimes and caches.
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Local data and generated output.
+db.sqlite3
+db.sqlite3-*
+*.sqlite3
+*.log
+media
+test_media
+staticfiles
+node_modules
+theme/static/css/dist
+
+# Editor and operating-system files.
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Documentation and development-only artifacts are not needed at runtime.
+docs
+tests
+**/tests
+**/test_*.py
+docker-compose*.yml
+Caddyfile
+Procfile
+render.yaml
+railway.toml
+app.json

@@ -244,6 +244,16 @@ DATABASE_URL=sqlite:///db.sqlite3 pytest apps/ai_automation/tests --ds=config.se
 
 Konfigurasi tersedia untuk Docker Compose, Heroku (`app.json`), Render (`render.yaml`), dan Railway (`railway.toml`). Production membutuhkan PostgreSQL, HTTPS, persistent S3-compatible storage untuk media, worker background, dan credential social-platform milik operator.
 
+Untuk VPS, gunakan konfigurasi production mandiri yang hanya mengekspos Caddy
+di port 80/443:
+
+```bash
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build
+```
+
+Checklist DNS, secret, firewall, superuser, health check, update, dan backup ada
+di [`docs/deployment-vps.md`](docs/deployment-vps.md).
+
 Semua integrasi social menggunakan official first-party APIs dan credential Anda sendiri; tidak ada aggregator sebagai perantara.
 
 ## Lisensi dan upstream
