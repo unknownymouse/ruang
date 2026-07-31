@@ -29,20 +29,27 @@ from ..models import (
     PromptTemplate,
 )
 from .providers import AIResult, ProviderError, ProviderRouter
+from .strategy import build_traffic_playbook
 
-DEFAULT_CAMPAIGN_PROMPT = """You are Ruang's senior content strategist.
-Turn the campaign context into a practical cross-platform content calendar.
-Respect the Brand Brain, use performance signals as guidance rather than fact,
-and adapt every caption to the native conventions of its target platform.
+DEFAULT_CAMPAIGN_PROMPT = """You are Ruang's senior content growth strategist.
+Turn the campaign context into a useful, evidence-aware, cross-platform content
+calendar. Respect the Brand Brain and traffic_playbook. Treat performance signals
+as directional--not causal--and adapt every item to native platform conventions.
 
 Return a single JSON object with:
-- strategy: north_star, narrative, pillars (array), channel_roles (object), optimization_note
+- strategy: north_star, narrative, pillars (array), channel_roles (object),
+  traffic_objective, demand_hypotheses (array), search_intents (array),
+  hook_angles (array), distribution_plan (array), conversion_path,
+  experiments (array), success_metrics (array), evidence_plan (array),
+  source_alignment (array), and optimization_note.
 - items: array of objects containing platform, scheduled_for (ISO-8601), title,
   caption, caption_variants (exactly 3), visual_prompt, video_script,
   content_pillar, and call_to_action.
 
-Never schedule outside the campaign date range. Do not claim facts that are not
-in the knowledge base. Do not publish or bypass human approval."""
+Never invent live trend volume, popularity, statistics, evidence, or testimonials.
+Treat supplied trend signals as hypotheses until a human verifies them. Never
+schedule outside the campaign date range. Never claim facts absent from the
+knowledge base. Do not publish or bypass human approval."""
 
 
 class QuotaExceededError(RuntimeError):
@@ -147,6 +154,8 @@ def generate_campaign(campaign: Campaign, actor=None, router: ProviderRouter | N
     campaign.save(update_fields=["status", "generation_error", "updated_at"])
 
     context = _campaign_context(campaign, brand_brain)
+    campaign.strategy_sources = context["traffic_playbook"]["sources"]
+    campaign.save(update_fields=["strategy_sources", "updated_at"])
     prompt = (
         f"{prompt_version.template}\n\n"
         f"<campaign_context>{json.dumps(context, ensure_ascii=False, default=str)}</campaign_context>"
@@ -215,6 +224,8 @@ def _campaign_context(campaign: Campaign, brain: BrandBrain) -> dict[str, Any]:
         campaign.start_date + timedelta(days=min(int(index * spacing), total_days - 1))
         for index in range(desired_count)
     ]
+    performance = analytics_feedback(campaign.workspace)
+    traffic_playbook = build_traffic_playbook(brain, campaign.platforms, performance)
     return {
         "name": campaign.name,
         "brief": campaign.brief,
@@ -233,9 +244,13 @@ def _campaign_context(campaign: Campaign, brain: BrandBrain) -> dict[str, Any]:
             "guidelines": brain.guidelines,
             "forbidden_topics": brain.forbidden_topics,
             "knowledge_base": brain.knowledge_base,
+            "traffic_goals": brain.traffic_goals,
+            "topic_seeds": brain.topic_seeds,
+            "conversion_actions": brain.conversion_actions,
             "language": brain.default_language,
         },
-        "analytics_feedback": analytics_feedback(campaign.workspace),
+        "analytics_feedback": performance,
+        "traffic_playbook": traffic_playbook,
     }
 
 
@@ -271,13 +286,15 @@ def _validate_and_normalize_items(campaign: Campaign, payload: dict[str, Any]) -
         if not isinstance(raw, dict):
             continue
         platform = str(raw.get("platform") or "").strip()
-        caption = str(raw.get("caption") or "").strip()
-        if platform not in allowed_platforms or not caption:
+        if platform not in allowed_platforms:
+            continue
+        caption = _fit_platform_caption(raw.get("caption"), platform)
+        if not caption:
             continue
         scheduled_for = _parse_schedule(raw.get("scheduled_for"), campaign)
         variants = []
         for value in raw.get("caption_variants") or []:
-            variant = str(value).strip()
+            variant = _fit_platform_caption(value, platform)
             if variant and variant != caption and variant not in variants:
                 variants.append(variant)
         fallbacks = [
@@ -288,6 +305,7 @@ def _validate_and_normalize_items(campaign: Campaign, payload: dict[str, Any]) -
         for fallback in fallbacks:
             if len(variants) >= 3:
                 break
+            fallback = _fit_platform_caption(fallback, platform)
             if fallback not in variants:
                 variants.append(fallback)
         normalized.append(
@@ -307,6 +325,16 @@ def _validate_and_normalize_items(campaign: Campaign, payload: dict[str, Any]) -
         raise ValueError("Provider response did not contain any valid content items.")
     campaign.strategy = strategy
     return normalized
+
+
+def _fit_platform_caption(value: Any, platform: str) -> str:
+    text = str(value or "").strip()
+    limit = SocialAccount.PLATFORM_CHAR_LIMITS.get(platform)
+    if not limit or len(text) <= limit:
+        return text
+    cutoff = max(limit - 3, 1)
+    clipped = text[:cutoff].rsplit(" ", 1)[0].rstrip() or text[:cutoff]
+    return f"{clipped}..."
 
 
 def _parse_schedule(value: Any, campaign: Campaign):
@@ -379,6 +407,7 @@ def _persist_generation(
     campaign.save(
         update_fields=[
             "strategy",
+            "strategy_sources",
             "status",
             "provider",
             "model_name",

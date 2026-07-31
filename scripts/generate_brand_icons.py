@@ -21,6 +21,8 @@ def build_icon() -> Image.Image:
     end = (16, 42, 43)
     gradient = Image.new("RGBA", (size, size))
     pixels = gradient.load()
+    if pixels is None:
+        raise RuntimeError("Pillow could not expose the icon pixel buffer.")
     for y in range(size):
         for x in range(size):
             progress = (x + y) / (2 * (size - 1))

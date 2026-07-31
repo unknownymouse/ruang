@@ -137,6 +137,7 @@ class SocialAccount(models.Model):
         "google_business": 1500,
         "mastodon": 500,
         "devto": 25000,
+        "x": 280,
     }
 
     @property
@@ -164,6 +165,9 @@ class SocialAccount(models.Model):
             "supports_first_comment": False,
         },
         "bluesky": {
+            "supports_first_comment": False,
+        },
+        "x": {
             "supports_first_comment": False,
         },
         "google_business": {
@@ -227,6 +231,7 @@ class SocialAccount(models.Model):
             "google_business": "gb",
             "mastodon": "ma",
             "devto": "dv",
+            "x": "x",
         }
         return icons.get(self.platform, self.platform[:2])
 

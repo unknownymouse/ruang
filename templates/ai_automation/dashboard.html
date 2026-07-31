@@ -145,6 +145,12 @@
           <div class="ruang-field"><label>Aturan brand</label><textarea name="guidelines">{{ brain.guidelines }}</textarea></div>
           <div class="ruang-field"><label>Topik terlarang · satu per baris</label><textarea name="forbidden_topics">{{ brain.forbidden_topics|join:"&#10;" }}</textarea></div>
           <div class="ruang-field"><label>Knowledge base</label><textarea name="knowledge_base" style="min-height:150px;">{{ brain.knowledge_base }}</textarea></div>
+          <div class="ruang-field">
+            <label><input type="checkbox" name="traffic_strategy_enabled" {% if brain.traffic_strategy_enabled %}checked{% endif %}> Aktifkan strategi traffic berbasis evidence</label>
+          </div>
+          <div class="ruang-field"><label>Tujuan traffic</label><textarea name="traffic_goals" placeholder="Contoh: kunjungan berkualitas ke landing page">{{ brain.traffic_goals }}</textarea></div>
+          <div class="ruang-field"><label>Topic seeds / sinyal tren - satu per baris</label><textarea name="topic_seeds" placeholder="Masukkan hasil riset tren saat ini; AI tidak akan mengarang volume.">{{ brain.topic_seeds|join:"&#10;" }}</textarea></div>
+          <div class="ruang-field"><label>Aksi konversi</label><textarea name="conversion_actions" placeholder="Contoh: klik landing page, daftar demo, atau reply">{{ brain.conversion_actions }}</textarea></div>
           <div class="ruang-two">
             <div class="ruang-field"><label>Bahasa</label><input name="default_language" value="{{ brain.default_language }}"></div>
             <div class="ruang-field"><label>Token / bulan</label><input type="number" name="monthly_token_limit" value="{{ brain.monthly_token_limit }}"></div>

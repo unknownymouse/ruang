@@ -23,6 +23,7 @@ REQUIRED_CREDENTIAL_KEYS = {
     "google_business": (("client_id",), ("client_secret",)),
     "linkedin_personal": (("client_id",), ("client_secret",)),
     "linkedin_company": (("client_id",), ("client_secret",)),
+    "x": (("client_id",), ("client_secret",)),
 }
 
 
@@ -54,6 +55,7 @@ class PlatformCredential(models.Model):
         GOOGLE_BUSINESS = "google_business", "Google Business Profile"
         MASTODON = "mastodon", "Mastodon"
         DEVTO = "devto", "DEV.to"
+        X = "x", "X"
 
     class TestResult(models.TextChoices):
         SUCCESS = "success", "Success"

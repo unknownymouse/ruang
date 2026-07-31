@@ -71,6 +71,7 @@ BACKFILL_DAYS_PER_PLATFORM: dict[str, int] = {
     "pinterest": 90,
     "threads": 90,
     "google_business": 90,
+    "x": 90,
     "tiktok": 60,
     # Bluesky / Mastodon / LinkedIn-Personal have no analytics surface — skip.
     # LinkedIn only exposes share statistics for Organization URNs, not
@@ -113,6 +114,10 @@ _POST_FIELD_OVERRIDES: dict[str, dict[str, str]] = {
     },
     "bluesky": {
         # AT Protocol counts: align with the bluesky catalog.
+        "shares": "reposts",
+        "comments": "replies",
+    },
+    "x": {
         "shares": "reposts",
         "comments": "replies",
     },

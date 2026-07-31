@@ -210,12 +210,29 @@ class DemoProvider:
                     "call_to_action": "Simpan, bagikan, atau beri pendapat di komentar.",
                 }
             )
+        playbook = context.get("traffic_playbook") or {}
         data = {
             "strategy": {
                 "north_star": context.get("objective") or f"Membangun relevansi seputar {subject}",
                 "narrative": f"Mengubah brief menjadi seri konten yang konsisten: {subject}.",
                 "pillars": ["education", "trust", "product", "community"],
                 "channel_roles": {platform: _channel_role(platform) for platform in platforms},
+                "traffic_objective": playbook.get("traffic_goals") or context.get("objective"),
+                "demand_hypotheses": playbook.get("topic_seeds") or [subject],
+                "search_intents": ["learn", "compare", "act"],
+                "hook_angles": ["problem", "practical outcome", "evidence", "counterintuitive lesson"],
+                "distribution_plan": [
+                    f"Adapt the core idea for {platform}: {_channel_role(platform)}" for platform in platforms
+                ],
+                "conversion_path": playbook.get("conversion_actions") or "One measurable next action per item.",
+                "experiments": ["Test two hook angles", "Test proof versus how-to format", "Test CTA wording"],
+                "success_metrics": [
+                    signal
+                    for rules in (playbook.get("platform_rules") or {}).values()
+                    for signal in rules.get("primary_signals", [])
+                ][:10],
+                "evidence_plan": ["Use Brand Brain knowledge", "Verify current trend hypotheses before approval"],
+                "source_alignment": [source.get("key") for source in playbook.get("sources", [])],
                 "optimization_note": context.get("analytics_feedback") or "Gunakan baseline 30 hari setelah publikasi.",
             },
             "items": items,
@@ -239,6 +256,9 @@ def _demo_caption(platform: str, hook: str, subject: str, objective: str) -> str
             f"Konteksnya sederhana: {objective or 'keputusan yang baik dimulai dari pemahaman yang jernih'}.\n\n"
             "Apa pelajaran yang paling relevan untuk tim Anda?"
         )
+    if platform == "x":
+        base = f"{hook}: {subject}. {objective or 'Mulai dari insight yang bisa diuji.'}"
+        return base[:280]
     if platform == "instagram":
         return (
             f"{hook} ✨\n\n{subject}\n\n"
@@ -255,6 +275,8 @@ def _channel_role(platform: str) -> str:
         return "Thought leadership, bukti, dan percakapan profesional."
     if platform == "instagram":
         return "Visual storytelling, saves, shares, dan community building."
+    if platform == "x":
+        return "Real-time conversation, concise insight, distribution, and rapid message testing."
     return "Distribusi pesan utama dengan format yang sesuai kebiasaan audiens."
 
 
