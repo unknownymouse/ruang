@@ -11,10 +11,15 @@ from apps.accounts.models import User
 from apps.ai_automation.forms import AIProviderConnectionForm
 from apps.ai_automation.models import AIProviderAuditLog, AIProviderConnection
 from apps.ai_automation.services.providers import (
+    AnthropicProvider,
     GeminiProvider,
     OpenAICompatibleProvider,
     ProviderError,
     configured_providers,
+    provider_from_connection,
+)
+from apps.ai_automation.services.providers import (
+    test_provider_connection as run_provider_connection_test,
 )
 from apps.members.models import OrgMembership, WorkspaceMembership
 from apps.organizations.models import Organization
@@ -266,14 +271,16 @@ def test_custom_endpoint_rejects_private_network(provider_owner, scheme):
 
 
 def test_provider_http_error_does_not_leak_gemini_key():
-    request = httpx.Request("POST", "https://generativelanguage.googleapis.com/v1beta/models/test:generateContent?key=secret")
+    request = httpx.Request(
+        "POST", "https://generativelanguage.googleapis.com/v1beta/models/test:generateContent?key=secret"
+    )
     response = httpx.Response(401, request=request)
 
     with (
         patch("apps.ai_automation.services.providers.httpx.post", return_value=response),
         pytest.raises(ProviderError) as exc_info,
     ):
-            GeminiProvider(api_key="secret", model="test").generate_json(system="system", prompt="prompt")
+        GeminiProvider(api_key="secret", model="test").generate_json(system="system", prompt="prompt")
 
     assert "secret" not in str(exc_info.value)
     assert "HTTP 401" in str(exc_info.value)
@@ -282,17 +289,17 @@ def test_provider_http_error_does_not_leak_gemini_key():
 @pytest.mark.parametrize(
     "payload",
     [
-        {"choices": [{"message": {"content": [{"type": "text", "text": "{\"ok\": true}"}]}}]},
+        {"choices": [{"message": {"content": [{"type": "text", "text": '{"ok": true}'}]}}]},
         {"choices": [{"message": {"content": {"ok": True}}}]},
         {"result": {"ok": True}},
-        {"output_text": "{\"ok\": true}"},
-        {"output": [{"content": [{"type": "output_text", "text": "{\"ok\": true}"}]}]},
+        {"output_text": '{"ok": true}'},
+        {"output": [{"content": [{"type": "output_text", "text": '{"ok": true}'}]}]},
         {
             "choices": [
                 {
                     "message": {
                         "content": None,
-                        "tool_calls": [{"function": {"arguments": "{\"ok\": true}"}}],
+                        "tool_calls": [{"function": {"arguments": '{"ok": true}'}}],
                     }
                 }
             ]
@@ -338,3 +345,168 @@ def test_openai_compatible_reports_missing_content_without_leaking_body():
             base_url="https://gateway.example.test/v1",
             model="custom-model",
         ).generate_json(system="system", prompt="prompt")
+
+
+@pytest.mark.parametrize(
+    ("model_name", "selected_provider", "expected_provider"),
+    [
+        ("gpt-5.6-luna", "gemini", "openai"),
+        ("o3-mini", "anthropic", "openai"),
+        ("gemini-2.5-pro", "openai", "gemini"),
+        ("gemma-3-27b-it", "anthropic", "gemini"),
+        ("claude-sonnet-4-5", "gemini", "anthropic"),
+    ],
+)
+@pytest.mark.django_db
+def test_provider_is_auto_detected_for_known_model_families(
+    provider_owner,
+    model_name,
+    selected_provider,
+    expected_provider,
+):
+    _client, _user, organization = provider_owner
+    form = AIProviderConnectionForm(
+        {
+            "provider": selected_provider,
+            "api_key": "secret",
+            "base_url": "",
+            "model_name": model_name,
+            "priority": "1",
+            "is_active": "on",
+        },
+        organization=organization,
+    )
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["provider"] == expected_provider
+    assert form.auto_detected_provider == expected_provider
+
+
+@pytest.mark.django_db
+def test_custom_endpoint_auto_selects_openai_compatible_for_any_model(provider_owner):
+    _client, _user, organization = provider_owner
+    form = AIProviderConnectionForm(
+        {
+            "provider": "gemini",
+            "api_key": "secret",
+            "base_url": "http://31.186.86.47:62003/v1",
+            "model_name": "gemini-2.5-pro",
+            "priority": "1",
+            "is_active": "on",
+        },
+        organization=organization,
+    )
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["provider"] == "openai_compatible"
+    assert form.cleaned_data["base_url"] == "http://31.186.86.47:62003/v1"
+
+
+@pytest.mark.django_db
+def test_saving_existing_mismatch_auto_corrects_provider(provider_owner):
+    client, user, organization = provider_owner
+    connection = AIProviderConnection.objects.create(
+        organization=organization,
+        provider="gemini",
+        api_key="gateway-secret",
+        model_name="gpt-5.6-luna",
+        created_by=user,
+        updated_by=user,
+    )
+
+    response = client.post(
+        reverse("ai_provider_settings:index", args=[organization.id]),
+        {
+            "action": "update",
+            "connection_id": str(connection.id),
+            "provider": "openai_compatible",
+            "api_key": "",
+            "base_url": "http://31.186.86.47:62003/v1",
+            "model_name": "gpt-5.6-luna",
+            "priority": "100",
+            "is_active": "on",
+        },
+    )
+
+    assert response.status_code == 302, response.content.decode()
+    connection.refresh_from_db()
+    assert connection.provider == "openai_compatible"
+    assert connection.base_url == "http://31.186.86.47:62003/v1"
+    assert connection.api_key == "gateway-secret"
+
+
+@pytest.mark.parametrize(
+    ("stored_provider", "model_name", "expected_type", "expected_name"),
+    [
+        ("gemini", "gpt-5.6-luna", OpenAICompatibleProvider, "openai"),
+        ("openai", "gemini-2.5-pro", GeminiProvider, "gemini"),
+        ("gemini", "claude-sonnet-4-5", AnthropicProvider, "anthropic"),
+    ],
+)
+def test_runtime_router_repairs_stale_provider_labels(
+    stored_provider,
+    model_name,
+    expected_type,
+    expected_name,
+):
+    connection = AIProviderConnection(
+        provider=stored_provider,
+        api_key="secret",
+        base_url="",
+        model_name=model_name,
+    )
+
+    provider = provider_from_connection(connection)
+
+    assert isinstance(provider, expected_type)
+    assert provider.name == expected_name
+
+
+def test_actual_connection_test_uses_detected_protocol(settings):
+    settings.RUANG_OPENAI_BASE_URL = "https://api.openai.com/v1"
+    connection = AIProviderConnection(
+        provider="gemini",
+        api_key="secret",
+        base_url="",
+        model_name="gpt-5.6-luna",
+    )
+    request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    response = httpx.Response(
+        200,
+        request=request,
+        json={"choices": [{"message": {"content": '{"ok": true}'}}]},
+    )
+
+    with patch(
+        "apps.ai_automation.services.providers.httpx.post",
+        return_value=response,
+    ) as post:
+        result = run_provider_connection_test(connection)
+
+    assert result.data == {"ok": True}
+    assert post.call_args.args[0] == "https://api.openai.com/v1/chat/completions"
+    assert "params" not in post.call_args.kwargs
+
+
+@pytest.mark.django_db
+def test_mismatched_connection_render_exposes_auto_routing_controls(provider_owner):
+    client, user, organization = provider_owner
+    AIProviderConnection.objects.create(
+        organization=organization,
+        provider="gemini",
+        api_key="secret",
+        model_name="gpt-5.6-luna",
+        created_by=user,
+        updated_by=user,
+    )
+
+    response = client.get(reverse("ai_provider_settings:index", args=[organization.id]))
+    page = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Auto-routing notice:" in page
+    assert "data-provider-select" in page
+    assert "data-model-input" in page
+    assert "data-base-url-input" in page
+    assert "Test actual connection" in page
+    assert "Detects GPT/o-series, Gemini/Gemma, and Claude" in page

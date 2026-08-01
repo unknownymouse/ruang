@@ -77,7 +77,6 @@ class AIProviderConnectionForm(forms.ModelForm):
     def __init__(self, *args, organization, **kwargs):
         super().__init__(*args, **kwargs)
         self.organization = organization
-        self.original_provider = self.instance.provider if self.instance.pk else ""
         defaults = provider_defaults()
         if not self.is_bound and not self.instance.pk:
             self.initial.setdefault("priority", 100)
@@ -95,12 +94,11 @@ class AIProviderConnectionForm(forms.ModelForm):
 
     def clean_api_key(self) -> str:
         value = self.cleaned_data.get("api_key", "").strip()
-        requested_provider = self.data.get("provider", "")
         if value:
             return value
-        if self.instance.pk and requested_provider == self.original_provider:
+        if self.instance.pk:
             return str(self.instance.api_key)
-        raise ValidationError("API key is required for a new provider or when changing provider type.")
+        raise ValidationError("API key is required for a new provider connection.")
 
     def clean(self):
         cleaned = super().clean()
@@ -108,15 +106,29 @@ class AIProviderConnectionForm(forms.ModelForm):
         if not provider:
             return cleaned
 
+        requested_provider = provider
+        selected_defaults = provider_defaults()[requested_provider]
+        model_name = str(cleaned.get("model_name") or selected_defaults["model_name"]).strip()
+        supplied_base_url = str(cleaned.get("base_url") or "").strip()
+        official_openai_url = provider_defaults()[AIProviderConnection.Provider.OPENAI]["base_url"].rstrip("/")
+        has_custom_endpoint = bool(supplied_base_url) and (supplied_base_url.rstrip("/") != official_openai_url)
+
+        detected_provider = AIProviderConnection.infer_provider_for_model(model_name)
+        if has_custom_endpoint:
+            provider = AIProviderConnection.Provider.OPENAI_COMPATIBLE
+        elif detected_provider:
+            provider = detected_provider
+        cleaned["provider"] = provider
+        self.auto_detected_provider = provider if provider != requested_provider else ""
+
         defaults = provider_defaults()[provider]
-        model_name = str(cleaned.get("model_name") or defaults["model_name"]).strip()
         if not model_name:
             self.add_error("model_name", "Model name is required.")
         else:
             cleaned["model_name"] = model_name
 
         if provider == AIProviderConnection.Provider.OPENAI_COMPATIBLE:
-            base_url = str(cleaned.get("base_url") or defaults["base_url"]).strip()
+            base_url = str(supplied_base_url or defaults["base_url"]).strip()
             if not base_url:
                 self.add_error("base_url", "Base URL is required for an OpenAI-compatible provider.")
             else:
@@ -125,7 +137,7 @@ class AIProviderConnectionForm(forms.ModelForm):
                 except ValidationError as exc:
                     self.add_error("base_url", exc)
         elif provider == AIProviderConnection.Provider.OPENAI:
-            cleaned["base_url"] = defaults["base_url"].rstrip("/")
+            cleaned["base_url"] = official_openai_url
         else:
             cleaned["base_url"] = ""
 

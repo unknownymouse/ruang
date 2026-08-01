@@ -407,16 +407,27 @@ class ProviderRouter:
 
 
 def provider_from_connection(connection):
-    if connection.provider in {"openai", "openai_compatible"}:
+    """Build the protocol adapter from endpoint and model family, not a stale label."""
+
+    base_url = str(connection.base_url or "").strip().rstrip("/")
+    official_openai_url = settings.RUANG_OPENAI_BASE_URL.rstrip("/")
+    has_custom_endpoint = bool(base_url) and base_url != official_openai_url
+
+    if connection.provider == "openai_compatible" or has_custom_endpoint:
+        effective_provider = "openai_compatible"
+    else:
+        effective_provider = connection.infer_provider_for_model(connection.model_name) or connection.provider
+
+    if effective_provider in {"openai", "openai_compatible"}:
         return OpenAICompatibleProvider(
-            name=connection.provider,
+            name=effective_provider,
             api_key=connection.api_key,
-            base_url=connection.base_url,
+            base_url=base_url or official_openai_url,
             model=connection.model_name,
         )
-    if connection.provider == "anthropic":
+    if effective_provider == "anthropic":
         return AnthropicProvider(api_key=connection.api_key, model=connection.model_name)
-    if connection.provider == "gemini":
+    if effective_provider == "gemini":
         return GeminiProvider(api_key=connection.api_key, model=connection.model_name)
     raise ProviderError("Unsupported AI provider configuration.")
 
@@ -486,8 +497,9 @@ def configured_providers(organization=None) -> list[Any]:
             is_active=True,
         ).order_by("priority", "provider")
         for connection in connections:
-            providers.append(provider_from_connection(connection))
-            configured_names.add(connection.provider)
+            provider = provider_from_connection(connection)
+            providers.append(provider)
+            configured_names.add(provider.name)
 
     providers.extend(_environment_providers(excluded_names=configured_names))
     return providers

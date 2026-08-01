@@ -81,6 +81,43 @@ class AIProviderConnection(models.Model):
     def __str__(self) -> str:
         return f"{self.organization.name} - {self.get_provider_display()}"
 
+    @classmethod
+    def infer_provider_for_model(cls, model_name: str) -> str:
+        """Infer official provider families while allowing unknown gateway models."""
+
+        normalized = str(model_name or "").strip().casefold()
+        if (
+            normalized.startswith(("gpt-", "chatgpt-", "text-embedding-", "omni-moderation-", "dall-e-"))
+            or normalized in {"o1", "o3", "o4"}
+            or normalized.startswith(("o1-", "o3-", "o4-"))
+        ):
+            return cls.Provider.OPENAI
+        if normalized.startswith(("gemini-", "models/gemini-", "gemma-", "models/gemma-")):
+            return cls.Provider.GEMINI
+        if normalized.startswith("claude-"):
+            return cls.Provider.ANTHROPIC
+        return ""
+
+    @classmethod
+    def model_compatibility_error(cls, provider: str, model_name: str) -> str:
+        """Return guidance for obvious cross-provider model mismatches."""
+
+        model = str(model_name or "").strip()
+        detected = cls.infer_provider_for_model(model)
+        if detected and provider not in {detected, cls.Provider.OPENAI_COMPATIBLE}:
+            detected_label = dict(cls.Provider.choices)[detected]
+            return (
+                f'Model "{model}" belongs to {detected_label}, not '
+                f"{dict(cls.Provider.choices).get(provider, provider)}. "
+                "Save the connection to auto-select the correct provider, or use "
+                "OpenAI-compatible with a custom endpoint."
+            )
+        return ""
+
+    @property
+    def compatibility_error(self) -> str:
+        return self.model_compatibility_error(self.provider, self.model_name)
+
     @property
     def masked_api_key(self) -> str:
         value = str(self.api_key or "")

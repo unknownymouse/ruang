@@ -69,7 +69,16 @@ def provider_settings(request, org_id):
                     "created",
                     {"model": connection.model_name, "priority": connection.priority, "active": connection.is_active},
                 )
-                messages.success(request, f"{connection.get_provider_display()} is connected and ready to test.")
+                route_note = (
+                    " Provider was auto-detected from the model and endpoint."
+                    if create_form.auto_detected_provider
+                    else ""
+                )
+                messages.success(
+                    request,
+                    f"{connection.get_provider_display()} was saved and is ready for an actual connection test."
+                    + route_note,
+                )
                 return redirect("ai_provider_settings:index", org_id=organization.id)
             messages.error(request, _form_errors(create_form))
         elif action in {"update", "delete"}:
@@ -103,7 +112,13 @@ def provider_settings(request, org_id):
                     "updated",
                     {"model": connection.model_name, "priority": connection.priority, "active": connection.is_active},
                 )
-                messages.success(request, f"{connection.get_provider_display()} settings were updated.")
+                route_note = (
+                    " Provider was auto-detected from the model and endpoint." if form.auto_detected_provider else ""
+                )
+                messages.success(
+                    request,
+                    f"{connection.get_provider_display()} settings were updated." + route_note,
+                )
                 return redirect("ai_provider_settings:index", org_id=organization.id)
             messages.error(request, _form_errors(form))
         else:
