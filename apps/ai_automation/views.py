@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
@@ -44,7 +44,11 @@ def _campaign_for_workspace(workspace, campaign_id):
 def dashboard(request, workspace_id):
     workspace = request.workspace
     brain = get_or_create_brand_brain(workspace)
-    campaigns = Campaign.objects.for_workspace(workspace.id).select_related("created_by")[:20]
+    campaigns = (
+        Campaign.objects.for_workspace(workspace.id)
+        .select_related("created_by")
+        .annotate(draft_count=Count("content_drafts", distinct=True))[:20]
+    )
     accounts = (
         SocialAccount.objects.for_workspace(workspace.id)
         .filter(connection_status=SocialAccount.ConnectionStatus.CONNECTED)
@@ -181,7 +185,10 @@ def create_campaign(request, workspace_id):
         return redirect("automation:dashboard", workspace_id=workspace_id)
     audit(request.workspace, request.user, "campaign.created", campaign, {"platforms": campaign.platforms})
     generate_campaign_task(str(campaign.id), str(request.user.id))
-    messages.success(request, "Kampanye masuk antrean generasi AI. Worker akan memprosesnya.")
+    messages.success(
+        request,
+        "AI sedang menyusun strategi dan konten platform. Setelah selesai, review lalu kirim ke Draft Composer.",
+    )
     return redirect("automation:campaign_detail", workspace_id=workspace_id, campaign_id=campaign.id)
 
 
@@ -189,7 +196,9 @@ def create_campaign(request, workspace_id):
 @require_GET
 def campaign_detail(request, workspace_id, campaign_id):
     campaign = _campaign_for_workspace(request.workspace, campaign_id)
-    drafts = campaign.content_drafts.select_related("social_account", "post").prefetch_related("media_jobs")
+    drafts = list(
+        campaign.content_drafts.select_related("social_account", "post").prefetch_related("media_jobs")
+    )
     return render(
         request,
         "ai_automation/campaign_detail.html",
@@ -197,6 +206,11 @@ def campaign_detail(request, workspace_id, campaign_id):
             "workspace": request.workspace,
             "campaign": campaign,
             "drafts": drafts,
+            "draft_count": len(drafts),
+            "materialized_count": sum(1 for draft in drafts if draft.post_id),
+            "flagged_count": sum(
+                1 for draft in drafts if draft.moderation_status == ContentDraft.ModerationStatus.FLAGGED
+            ),
             "can_approve": request.workspace_membership.effective_permissions.get("approve_posts", False),
             "can_edit": request.workspace_membership.effective_permissions.get("create_posts", False),
         },
@@ -235,6 +249,8 @@ def approve_campaign(request, workspace_id, campaign_id):
         if missing:
             message += f" {missing} item menunggu channel terhubung."
         messages.success(request, message)
+        if created:
+            return redirect("composer:drafts_list", workspace_id=workspace_id)
     return redirect("automation:campaign_detail", workspace_id=workspace_id, campaign_id=campaign.id)
 
 

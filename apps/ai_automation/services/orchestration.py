@@ -431,19 +431,30 @@ def materialize_campaign(campaign: Campaign, actor) -> tuple[int, int]:
     flagged = [draft for draft in drafts if draft.moderation_status == ContentDraft.ModerationStatus.FLAGGED]
     if flagged:
         raise ValueError("Resolve all moderation flags before approval.")
+    accounts = {
+        account.platform: account
+        for account in SocialAccount.objects.filter(
+            workspace=campaign.workspace,
+            connection_status=SocialAccount.ConnectionStatus.CONNECTED,
+            platform__in=campaign.platforms,
+        ).order_by("created_at")
+    }
     created = 0
     missing_accounts = 0
     for draft in drafts:
         if draft.post_id:
             continue
-        if draft.social_account is None:
+        account = draft.social_account
+        if account is None or account.connection_status != SocialAccount.ConnectionStatus.CONNECTED:
+            account = accounts.get(draft.platform)
+        if account is None:
             missing_accounts += 1
             draft.status = ContentDraft.Status.APPROVED
             draft.save(update_fields=["status", "updated_at"])
             continue
         post = create_post(
             workspace=campaign.workspace,
-            social_account=draft.social_account,
+            social_account=account,
             caption=draft.caption,
             title=draft.title,
             internal_notes=(
@@ -454,16 +465,17 @@ def materialize_campaign(campaign: Campaign, actor) -> tuple[int, int]:
             author=campaign.created_by or actor,
             status="draft",
             platform_overrides={
-                draft.social_account_id: {
+                account.id: {
                     "title": draft.title,
                     "caption": draft.caption,
                     "first_comment": None,
                 }
             },
         )
+        draft.social_account = account
         draft.post = post
         draft.status = ContentDraft.Status.MATERIALIZED
-        draft.save(update_fields=["post", "status", "updated_at"])
+        draft.save(update_fields=["social_account", "post", "status", "updated_at"])
         created += 1
     campaign.approved_by = actor
     campaign.approved_at = timezone.now()

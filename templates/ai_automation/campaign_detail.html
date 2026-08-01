@@ -33,7 +33,11 @@
   .rc-moderation { background:#fef2f2;color:#991b1b;border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:12px; }
   .rc-job { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #f0efed;font-size:12px; }
   .rc-error { background:#fff7ed;color:#9a3412;padding:13px 15px;border-radius:14px;margin-bottom:18px; }
-  @media(max-width:820px){.rc-strategy,.rc-grid{grid-template-columns:1fr}.rc-header{display:block}.rc-actions{justify-content:flex-start;margin-top:14px}}
+  .rc-flow { display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:18px; }
+  .rc-flow > div { border:1px solid #e7e5e4;border-radius:14px;padding:11px 12px;font-size:11px;color:#78716c;background:#fff; }
+  .rc-flow strong { display:block;color:#0f766e;font-size:12px;margin-bottom:3px; }
+  .rc-handoff { background:#ecfdf5;border:1px solid #a7f3d0;border-radius:18px;padding:18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:18px; }
+  @media(max-width:820px){.rc-strategy,.rc-grid{grid-template-columns:1fr}.rc-flow{grid-template-columns:1fr 1fr}.rc-header{display:block}.rc-actions{justify-content:flex-start;margin-top:14px}.rc-handoff{display:block}.rc-handoff .rc-actions{margin-top:12px}}
 </style>
 
 <main class="rc-shell">
@@ -45,6 +49,7 @@
     </div>
     <div class="rc-actions">
       <a class="rc-btn rc-soft" href="{% url 'automation:dashboard' workspace_id=workspace.id %}">Kembali</a>
+      <a class="rc-btn rc-soft" href="{% url 'composer:drafts_list' workspace_id=workspace.id %}">Draft Composer</a>
       {% if can_edit and campaign.status != "materialized" %}
       <form method="post" action="{% url 'automation:regenerate_campaign' workspace_id=workspace.id campaign_id=campaign.id %}">
         {% csrf_token %}<button class="rc-btn rc-soft">Regenerate</button>
@@ -52,13 +57,20 @@
       {% endif %}
       {% if can_approve and campaign.status == "pending_approval" %}
       <form method="post" action="{% url 'automation:approve_campaign' workspace_id=workspace.id campaign_id=campaign.id %}">
-        {% csrf_token %}<button class="rc-btn rc-primary">Setujui &amp; kirim ke composer</button>
+        {% csrf_token %}<button class="rc-btn rc-primary">Masukkan {{ draft_count }} konten ke Draft Composer</button>
       </form>
       {% endif %}
     </div>
   </header>
 
   {% if campaign.generation_error %}<div class="rc-error"><strong>Generation failed:</strong> {{ campaign.generation_error }}</div>{% endif %}
+
+  <section class="rc-flow" aria-label="Status workflow konten AI">
+    <div><strong>1 · Brief</strong>Sumber kebutuhan kampanye.</div>
+    <div><strong>2 · AI menghasilkan</strong>Strategi dan {{ draft_count }} konten platform.</div>
+    <div><strong>3 · Review</strong>Edit dan moderation sebelum handoff.</div>
+    <div><strong>4 · Draft Composer</strong>{{ materialized_count }} konten sudah masuk.</div>
+  </section>
 
   <section class="rc-card">
     <h2>Brief</h2>
@@ -93,8 +105,21 @@
   </section>
   {% endif %}
 
+  {% if campaign.status == "pending_approval" %}
+  <section class="rc-handoff">
+    <div>
+      <strong>{{ draft_count }} konten AI siap direview.</strong>
+      <p style="font-size:12px;color:#57534e;margin-top:4px;">Kirim ke Draft Composer setelah caption dan moderation sesuai. Konten tetap berstatus draft—tidak langsung terjadwal atau terpublikasi.</p>
+      {% if flagged_count %}<p style="font-size:12px;color:#b91c1c;margin-top:5px;">{{ flagged_count }} konten masih memiliki moderation flag.</p>{% endif %}
+    </div>
+    {% if can_approve %}<form method="post" action="{% url 'automation:approve_campaign' workspace_id=workspace.id campaign_id=campaign.id %}">{% csrf_token %}<button class="rc-btn rc-primary">Masukkan ke Draft Composer</button></form>{% endif %}
+  </section>
+  {% elif campaign.status == "materialized" %}
+  <section class="rc-handoff"><div><strong>Konten sudah tersinkron ke Draft Composer.</strong><p style="font-size:12px;color:#57534e;margin-top:4px;">Lanjutkan edit, approval, penjadwalan, dan publikasi dari workflow Composer.</p></div><a class="rc-btn rc-primary" href="{% url 'composer:drafts_list' workspace_id=workspace.id %}">Buka Draft Composer</a></section>
+  {% endif %}
+
   <section class="rc-card">
-    <h2>Kalender &amp; draft platform</h2>
+    <h2>Konten AI untuk direview · {{ draft_count }}</h2>
     {% for draft in drafts %}
     <article class="rc-draft">
       <div class="rc-draft-top">
@@ -164,4 +189,5 @@
     {% endfor %}
   </section>
 </main>
+{% if campaign.status == "generating" %}<script>window.setTimeout(function () { window.location.reload(); }, 5000);</script>{% endif %}
 {% endblock %}

@@ -2,12 +2,14 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.ai_automation.models import AIUsageEvent, BrandBrain, Campaign, ContentDraft
 from apps.ai_automation.services.orchestration import QuotaExceededError, generate_campaign, materialize_campaign
 from apps.ai_automation.services.providers import DemoProvider, ProviderRouter
+from apps.members.models import OrgMembership, WorkspaceMembership
 from apps.organizations.models import Organization
 from apps.social_accounts.models import SocialAccount
 from apps.workspaces.models import Workspace
@@ -15,13 +17,15 @@ from apps.workspaces.models import Workspace
 
 @pytest.fixture
 def automation_setup(db):
-    user = User.objects.create_user(email="ai@ruang.test", password="test")
+    user = User.objects.create_user(email="ai@ruang.test", password="test", tos_accepted_at=timezone.now())
     organization = Organization.objects.create(name="Ruang")
     workspace = Workspace.objects.create(
         organization=organization,
         name="Main",
         timezone="Asia/Jakarta",
     )
+    OrgMembership.objects.create(user=user, organization=organization, org_role="owner")
+    WorkspaceMembership.objects.create(user=user, workspace=workspace, workspace_role="owner")
     account = SocialAccount.objects.create(
         workspace=workspace,
         platform="instagram",
@@ -89,6 +93,60 @@ def test_human_approval_materializes_only_safe_composer_drafts(automation_setup)
     assert first.post.status == "draft"
     assert first.post.scheduled_at is None
     assert first.post.proposed_publish_at is not None
+
+
+@pytest.mark.django_db
+def test_materialization_resolves_a_reconnected_platform_account(automation_setup):
+    user, workspace, account, campaign = automation_setup
+    generate_campaign(campaign, actor=user, router=ProviderRouter([DemoProvider()]))
+    account.delete()
+    replacement = SocialAccount.objects.create(
+        workspace=workspace,
+        platform="instagram",
+        account_platform_id="ig-reconnected",
+        account_name="Ruang Reconnected",
+        connection_status=SocialAccount.ConnectionStatus.CONNECTED,
+    )
+
+    created, missing = materialize_campaign(campaign, user)
+
+    first = campaign.content_drafts.select_related("post").first()
+    assert created > 0
+    assert missing == 0
+    assert first is not None
+    assert first.social_account_id == replacement.id
+    assert first.post is not None
+    assert first.post.platform_posts.get().social_account_id == replacement.id
+
+
+@pytest.mark.django_db
+def test_approval_handoff_redirects_to_composer_drafts(client, automation_setup):
+    user, workspace, _account, campaign = automation_setup
+    generate_campaign(campaign, actor=user, router=ProviderRouter([DemoProvider()]))
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "automation:approve_campaign",
+            kwargs={"workspace_id": workspace.id, "campaign_id": campaign.id},
+        )
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("composer:drafts_list", kwargs={"workspace_id": workspace.id})
+    assert campaign.content_drafts.filter(post__isnull=False).exists()
+
+
+@pytest.mark.django_db
+def test_dashboard_exposes_ai_content_to_composer_workflow(client, automation_setup):
+    user, workspace, _account, _campaign = automation_setup
+    client.force_login(user)
+
+    response = client.get(reverse("automation:dashboard", kwargs={"workspace_id": workspace.id}))
+
+    assert response.status_code == 200
+    assert "Generate konten AI" in response.content.decode()
+    assert "Draft Composer" in response.content.decode()
 
 
 @pytest.mark.django_db
