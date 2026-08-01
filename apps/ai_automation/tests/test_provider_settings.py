@@ -222,13 +222,33 @@ def test_database_connections_precede_environment_fallbacks(settings, provider_o
 
 
 @pytest.mark.django_db
-def test_custom_endpoint_rejects_private_network(provider_owner):
+def test_custom_endpoint_accepts_public_http(provider_owner):
     _client, _user, organization = provider_owner
     form = AIProviderConnectionForm(
         {
             "provider": "openai_compatible",
             "api_key": "secret",
-            "base_url": "https://127.0.0.1:11434/v1",
+            "base_url": "http://31.186.86.47:62003/v1",
+            "model_name": "custom-model",
+            "priority": "1",
+            "is_active": "on",
+        },
+        organization=organization,
+    )
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["base_url"] == "http://31.186.86.47:62003/v1"
+
+
+@pytest.mark.parametrize("scheme", ["http", "https"])
+@pytest.mark.django_db
+def test_custom_endpoint_rejects_private_network(provider_owner, scheme):
+    _client, _user, organization = provider_owner
+    form = AIProviderConnectionForm(
+        {
+            "provider": "openai_compatible",
+            "api_key": "secret",
+            "base_url": f"{scheme}://127.0.0.1:11434/v1",
             "model_name": "local-model",
             "priority": "1",
             "is_active": "on",

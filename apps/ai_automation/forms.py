@@ -31,18 +31,18 @@ def provider_defaults() -> dict[str, dict[str, str]]:
     }
 
 
-def validate_public_https_endpoint(value: str) -> str:
-    """Reject obvious SSRF targets and plaintext credential transport."""
+def validate_public_endpoint(value: str) -> str:
+    """Allow public HTTP(S) endpoints while rejecting obvious SSRF targets."""
 
     candidate = value.strip().rstrip("/")
     try:
         parsed = urlsplit(candidate)
         port = parsed.port
     except ValueError as exc:
-        raise ValidationError("Enter a valid HTTPS endpoint.") from exc
+        raise ValidationError("Enter a valid HTTP or HTTPS endpoint.") from exc
 
-    if parsed.scheme != "https" or not parsed.hostname:
-        raise ValidationError("Custom endpoints must use HTTPS.")
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValidationError("Custom endpoints must use HTTP or HTTPS.")
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValidationError("Endpoint URLs cannot contain credentials, query strings, or fragments.")
 
@@ -121,7 +121,7 @@ class AIProviderConnectionForm(forms.ModelForm):
                 self.add_error("base_url", "Base URL is required for an OpenAI-compatible provider.")
             else:
                 try:
-                    cleaned["base_url"] = validate_public_https_endpoint(base_url)
+                    cleaned["base_url"] = validate_public_endpoint(base_url)
                 except ValidationError as exc:
                     self.add_error("base_url", exc)
         elif provider == AIProviderConnection.Provider.OPENAI:

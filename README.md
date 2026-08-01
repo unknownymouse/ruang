@@ -142,7 +142,8 @@ tanpa mengubah environment server. API key dienkripsi menggunakan SECRET_KEY,
 hanya ditampilkan dalam bentuk mask, dan perubahan/test dicatat tanpa secret.
 Koneksi organisasi diprioritaskan berdasarkan angka priority; konfigurasi
 environment di bawah tetap dipakai sebagai fallback VPS. Jaga SECRET_KEY tetap
-stabil saat redeploy, gunakan endpoint custom HTTPS publik, dan ungkapkan
+stabil saat redeploy, gunakan endpoint custom HTTP/HTTPS publik (HTTPS sangat
+disarankan karena HTTP mengirim API key tanpa enkripsi transport), dan ungkapkan
 provider eksternal pada Privacy Policy/subprocessor list.
 
 ```env

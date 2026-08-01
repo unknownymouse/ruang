@@ -30,8 +30,8 @@
         </div>
         <div>
           <label for="base_url" class="block text-sm font-semibold mb-1.5">Custom base URL</label>
-          <input id="base_url" name="base_url" type="url" maxlength="500" value="{{ create_form.base_url.value|default:'' }}" placeholder="https://api.example.com/v1" class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
-          <p class="text-xs mt-1" style="color:var(--text-tertiary)">OpenAI-compatible only; public HTTPS endpoints.</p>
+          <input id="base_url" name="base_url" type="url" maxlength="500" value="{{ create_form.base_url.value|default:'' }}" placeholder="http://api.example.com:8000/v1" class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
+          <p class="text-xs mt-1" style="color:var(--text-tertiary)">OpenAI-compatible only; public HTTP or HTTPS endpoints. HTTP sends the API key without transport encryption.</p>
         </div>
         <div>
           <label for="priority" class="block text-sm font-semibold mb-1.5">Priority</label>
