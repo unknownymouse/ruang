@@ -479,7 +479,13 @@ def materialize_campaign(campaign: Campaign, actor) -> tuple[int, int]:
         created += 1
     campaign.approved_by = actor
     campaign.approved_at = timezone.now()
-    campaign.status = Campaign.Status.MATERIALIZED if created else Campaign.Status.APPROVED
+    has_materialized_drafts = created > 0 or any(draft.post_id for draft in drafts)
+    if missing_accounts:
+        campaign.status = Campaign.Status.PENDING_APPROVAL
+    elif has_materialized_drafts:
+        campaign.status = Campaign.Status.MATERIALIZED
+    else:
+        campaign.status = Campaign.Status.APPROVED
     campaign.save(update_fields=["approved_by", "approved_at", "status", "updated_at"])
     audit(
         campaign.workspace,

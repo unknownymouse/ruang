@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
@@ -147,6 +148,83 @@ def test_dashboard_exposes_ai_content_to_composer_workflow(client, automation_se
     assert response.status_code == 200
     assert "Generate konten AI" in response.content.decode()
     assert "Draft Composer" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_generation_without_connected_account_can_be_materialized_later(automation_setup):
+    user, workspace, account, campaign = automation_setup
+    account.delete()
+
+    generate_campaign(campaign, actor=user, router=ProviderRouter([DemoProvider()]))
+
+    assert campaign.content_drafts.exists()
+    assert not campaign.content_drafts.exclude(social_account=None).exists()
+
+    created, missing = materialize_campaign(campaign, user)
+    campaign.refresh_from_db()
+    assert created == 0
+    assert missing > 0
+    assert campaign.status == Campaign.Status.PENDING_APPROVAL
+
+    SocialAccount.objects.create(
+        workspace=workspace,
+        platform="instagram",
+        account_platform_id="ig-connected-later",
+        account_name="Ruang Connected Later",
+        connection_status=SocialAccount.ConnectionStatus.CONNECTED,
+    )
+
+    created, missing = materialize_campaign(campaign, user)
+    campaign.refresh_from_db()
+    assert created > 0
+    assert missing == 0
+    assert campaign.status == Campaign.Status.MATERIALIZED
+
+
+@pytest.mark.django_db
+def test_campaign_can_be_queued_without_connected_social_account(client, automation_setup):
+    user, workspace, account, _campaign = automation_setup
+    account.delete()
+    client.force_login(user)
+
+    with patch("apps.ai_automation.views.generate_campaign_task") as queued_task:
+        response = client.post(
+            reverse("automation:create_campaign", kwargs={"workspace_id": workspace.id}),
+            {
+                "name": "No-account campaign",
+                "brief": "Generate content before connecting a publishing account.",
+                "objective": "Awareness",
+                "target_audience": "Founders",
+                "platforms": ["instagram", "x"],
+                "cadence_per_week": "3",
+                "start_date": date.today().isoformat(),
+                "end_date": (date.today() + timedelta(days=14)).isoformat(),
+            },
+        )
+
+    created_campaign = Campaign.objects.get(name="No-account campaign")
+    assert response.status_code == 302
+    assert response.url == reverse(
+        "automation:campaign_detail",
+        kwargs={"workspace_id": workspace.id, "campaign_id": created_campaign.id},
+    )
+    assert created_campaign.platforms == ["instagram", "x"]
+    queued_task.assert_called_once_with(str(created_campaign.id), str(user.id))
+
+
+@pytest.mark.django_db
+def test_dashboard_allows_generation_without_social_accounts(client, automation_setup):
+    user, workspace, account, _campaign = automation_setup
+    account.delete()
+    client.force_login(user)
+
+    response = client.get(reverse("automation:dashboard", kwargs={"workspace_id": workspace.id}))
+
+    html = response.content.decode()
+    assert response.status_code == 200
+    assert "Akun sosial tidak wajib untuk generate" in html
+    assert 'value="x"' in html
+    assert 'type="submit">Generate konten AI' in html
 
 
 @pytest.mark.django_db

@@ -10,8 +10,9 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.credentials.models import PlatformCredential
 from apps.members.decorators import require_permission
-from apps.social_accounts.models import SocialAccount
+from apps.social_accounts.models import PlatformVisibility, SocialAccount
 
 from .models import (
     Campaign,
@@ -39,6 +40,27 @@ def _campaign_for_workspace(workspace, campaign_id):
     )
 
 
+def _available_content_platform_choices():
+    hidden = set(PlatformVisibility.objects.filter(is_visible=False).values_list("platform", flat=True))
+    return [(value, label) for value, label in PlatformCredential.Platform.choices if value not in hidden]
+
+
+def _content_platform_options(accounts):
+    accounts_by_platform = {}
+    for account in accounts:
+        accounts_by_platform.setdefault(account.platform, []).append(account)
+    has_accounts = bool(accounts)
+    return [
+        {
+            "value": value,
+            "label": label,
+            "accounts": accounts_by_platform.get(value, []),
+            "selected": bool(accounts_by_platform.get(value)) if has_accounts else value == "instagram",
+        }
+        for value, label in _available_content_platform_choices()
+    ]
+
+
 @login_required
 @require_GET
 def dashboard(request, workspace_id):
@@ -49,7 +71,7 @@ def dashboard(request, workspace_id):
         .select_related("created_by")
         .annotate(draft_count=Count("content_drafts", distinct=True))[:20]
     )
-    accounts = (
+    accounts = list(
         SocialAccount.objects.for_workspace(workspace.id)
         .filter(connection_status=SocialAccount.ConnectionStatus.CONNECTED)
         .order_by("platform", "account_name")
@@ -65,6 +87,7 @@ def dashboard(request, workspace_id):
             "brain": brain,
             "campaigns": campaigns,
             "accounts": accounts,
+            "platform_options": _content_platform_options(accounts),
             "prompt": prompt,
             "usage": usage,
             "provider_names": provider_names,
@@ -142,9 +165,11 @@ def create_prompt_version(request, workspace_id):
 @require_POST
 @require_permission("create_posts")
 def create_campaign(request, workspace_id):
-    platforms = list(dict.fromkeys(request.POST.getlist("platforms")))
+    requested_platforms = list(dict.fromkeys(request.POST.getlist("platforms")))
+    available_platforms = {value for value, _label in _available_content_platform_choices()}
+    platforms = [platform for platform in requested_platforms if platform in available_platforms]
     if not platforms:
-        messages.error(request, "Pilih minimal satu channel.")
+        messages.error(request, "Pilih minimal satu platform target untuk konten AI.")
         return redirect("automation:dashboard", workspace_id=workspace_id)
     try:
         start_date = date.fromisoformat(request.POST.get("start_date", ""))
@@ -155,17 +180,6 @@ def create_campaign(request, workspace_id):
     if end_date < start_date:
         messages.error(request, "Tanggal selesai harus sesudah tanggal mulai.")
         return redirect("automation:dashboard", workspace_id=workspace_id)
-    valid_platforms = set(
-        SocialAccount.objects.for_workspace(request.workspace.id)
-        .filter(
-            connection_status=SocialAccount.ConnectionStatus.CONNECTED,
-            platform__in=platforms,
-        )
-        .values_list("platform", flat=True)
-    )
-    if not valid_platforms:
-        messages.error(request, "Tidak ada akun terhubung untuk channel yang dipilih.")
-        return redirect("automation:dashboard", workspace_id=workspace_id)
     campaign = Campaign.objects.create(
         workspace=request.workspace,
         created_by=request.user,
@@ -173,7 +187,7 @@ def create_campaign(request, workspace_id):
         brief=request.POST.get("brief", "").strip(),
         objective=request.POST.get("objective", "").strip()[:500],
         target_audience=request.POST.get("target_audience", "").strip()[:500],
-        platforms=sorted(valid_platforms),
+        platforms=sorted(platforms),
         cadence_per_week=cadence,
         start_date=start_date,
         end_date=end_date,
@@ -199,6 +213,21 @@ def campaign_detail(request, workspace_id, campaign_id):
     drafts = list(
         campaign.content_drafts.select_related("social_account", "post").prefetch_related("media_jobs")
     )
+    connected_platforms = set(
+        SocialAccount.objects.for_workspace(request.workspace.id)
+        .filter(
+            connection_status=SocialAccount.ConnectionStatus.CONNECTED,
+            platform__in=campaign.platforms,
+        )
+        .values_list("platform", flat=True)
+    )
+    platform_labels = dict(PlatformCredential.Platform.choices)
+    missing_platforms = [
+        platform_labels.get(platform, platform)
+        for platform in campaign.platforms
+        if platform not in connected_platforms
+    ]
+    can_approve = request.workspace_membership.effective_permissions.get("approve_posts", False)
     return render(
         request,
         "ai_automation/campaign_detail.html",
@@ -211,7 +240,9 @@ def campaign_detail(request, workspace_id, campaign_id):
             "flagged_count": sum(
                 1 for draft in drafts if draft.moderation_status == ContentDraft.ModerationStatus.FLAGGED
             ),
-            "can_approve": request.workspace_membership.effective_permissions.get("approve_posts", False),
+            "missing_platforms": missing_platforms,
+            "can_materialize": can_approve and not missing_platforms,
+            "can_approve": can_approve,
             "can_edit": request.workspace_membership.effective_permissions.get("create_posts", False),
         },
     )

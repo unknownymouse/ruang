@@ -28,7 +28,11 @@
   .ruang-stat strong { display: block; font-size: 19px; }
   .ruang-stat span { color: #ccfbf1; font-size: 11px; }
   .ruang-channels { display: flex; flex-wrap: wrap; gap: 8px; }
-  .ruang-channel { border: 1px solid #d6d3d1; padding: 8px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+  .ruang-channel { border: 1px solid #d6d3d1; padding: 9px 11px; border-radius: 12px; font-size: 12px; cursor: pointer; display:flex; align-items:flex-start; gap:7px; min-width:190px; }
+  .ruang-channel:has(input:checked) { border-color:#14b8a6;background:#f0fdfa; }
+  .ruang-channel input { width:auto;margin-top:2px; }
+  .ruang-channel strong { display:block;color:#292524; }
+  .ruang-channel small { display:block;color:#78716c;margin-top:2px;font-size:10px; }
   .ruang-campaign { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid #f0efed; }
   .ruang-campaign:last-child { border-bottom: 0; }
   .ruang-campaign a { color: #1c1917; font-weight: 700; text-decoration: none; }
@@ -101,18 +105,26 @@
             </div>
           </div>
           <div class="ruang-field">
-            <label>Channel dan akun</label>
-            {% if accounts %}
+            <label>Platform target</label>
             <div class="ruang-channels">
-              {% for account in accounts %}
+              {% for option in platform_options %}
               <label class="ruang-channel">
-                <input type="checkbox" name="platforms" value="{{ account.platform }}" style="width:auto;margin-right:5px;">
-                {{ account.get_platform_display }} · {{ account.account_name|default:account.account_handle }}
+                <input type="checkbox" name="platforms" value="{{ option.value }}" {% if option.selected %}checked{% endif %}>
+                <span>
+                  <strong>{{ option.label }}</strong>
+                  <small>
+                    {% if option.accounts %}
+                      Terhubung: {% for account in option.accounts %}{{ account.account_name|default:account.account_handle }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% else %}
+                      Generate sekarang, hubungkan akun nanti
+                    {% endif %}
+                  </small>
+                </span>
               </label>
               {% endfor %}
             </div>
-            {% else %}
-            <div class="ruang-note">Hubungkan minimal satu social account agar output AI dapat masuk ke Draft Composer. <a href="{% url 'social_accounts:list' workspace_id=workspace.id %}">Hubungkan akun</a>.</div>
+            {% if not accounts %}
+            <div class="ruang-note" style="margin-top:10px;">Akun sosial tidak wajib untuk generate. Konten AI tetap dibuat dan dapat direview; hubungkan akun saat akan memasukkannya ke Draft Composer.</div>
             {% endif %}
           </div>
           <div class="ruang-field" style="max-width:220px;">
@@ -120,7 +132,7 @@
             <input type="number" min="1" max="14" name="cadence_per_week" value="3">
           </div>
           <div class="ruang-actions">
-            <button class="ruang-btn ruang-btn-primary" type="submit" {% if not accounts %}disabled{% endif %}>Generate konten AI → Review Draft</button>
+            <button class="ruang-btn ruang-btn-primary" type="submit">Generate konten AI → Review Draft</button>
           </div>
         </form>
       </div>

@@ -22,6 +22,8 @@ def _safe_request_error(provider: str, exc: Exception) -> ProviderError:
         return ProviderError(f"{provider} request timed out.")
     if isinstance(exc, httpx.RequestError):
         return ProviderError(f"{provider} request failed because of a network error.")
+    if isinstance(exc, json.JSONDecodeError):
+        return ProviderError(f"{provider} endpoint returned non-JSON data.")
     return ProviderError(f"{provider} returned an invalid response.")
 
 
@@ -56,6 +58,99 @@ def _json_object(text: str) -> dict[str, Any]:
     return value
 
 
+def _content_text(content: Any) -> str:
+    """Extract text from common OpenAI-compatible content block variants."""
+
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(_content_text(part) for part in content)
+    if not isinstance(content, dict):
+        return ""
+    text = content.get("text")
+    if isinstance(text, dict):
+        text = text.get("value")
+    if isinstance(text, str):
+        return text
+    value = content.get("value")
+    if isinstance(value, str):
+        return value
+    nested = content.get("content")
+    if nested is not content:
+        return _content_text(nested)
+    return ""
+
+
+def _openai_response_content(payload: Any) -> str | dict[str, Any]:
+    """Read Chat Completions, Responses API, and common gateway envelopes."""
+
+    if not isinstance(payload, dict):
+        raise ProviderError("OpenAI-compatible endpoint returned a non-object response.")
+
+    error = payload.get("error")
+    if error:
+        details = []
+        if isinstance(error, dict):
+            for key in ("type", "code"):
+                value = error.get(key)
+                if isinstance(value, str) and value:
+                    details.append(f"{key}={value[:80]}")
+        suffix = f" ({', '.join(details)})" if details else ""
+        raise ProviderError(f"OpenAI-compatible endpoint returned an error object{suffix}.")
+
+    choices = payload.get("choices")
+    if isinstance(choices, list) and choices:
+        choice = choices[0]
+        if isinstance(choice, dict):
+            message = choice.get("message")
+            if isinstance(message, dict):
+                content = message.get("content")
+                if isinstance(content, dict):
+                    text = _content_text(content)
+                    return text or content
+                text = _content_text(content)
+                if text:
+                    return text
+                for tool_call in message.get("tool_calls") or []:
+                    if isinstance(tool_call, dict):
+                        function = tool_call.get("function") or {}
+                        arguments = function.get("arguments") if isinstance(function, dict) else None
+                        if isinstance(arguments, str) and arguments:
+                            return arguments
+            text = _content_text(choice.get("text"))
+            if text:
+                return text
+
+    for key in ("output_text", "response", "text"):
+        text = _content_text(payload.get(key))
+        if text:
+            return text
+
+    for key in ("data", "result"):
+        nested = payload.get(key)
+        if isinstance(nested, dict):
+            return _openai_response_content(nested)
+        text = _content_text(nested)
+        if text:
+            return text
+
+    output = payload.get("output")
+    if isinstance(output, list):
+        text = "".join(_content_text(item.get("content")) for item in output if isinstance(item, dict))
+        if text:
+            return text
+
+    if "ok" in payload or "strategy" in payload or "items" in payload:
+        return payload
+
+    received_fields = ", ".join(sorted(str(key)[:40] for key in payload)) or "none"
+    raise ProviderError(
+        "OpenAI-compatible response is missing generated content "
+        "(expected choices[0].message.content or output_text). "
+        f"Received fields: {received_fields}."
+    )
+
+
 class OpenAICompatibleProvider:
     def __init__(self, *, name: str, api_key: str, base_url: str, model: str):
         self.name = name
@@ -81,14 +176,17 @@ class OpenAICompatibleProvider:
             response.raise_for_status()
             payload = response.json()
             usage = payload.get("usage") or {}
+            content = _openai_response_content(payload)
             return AIResult(
-                data=_json_object(payload["choices"][0]["message"]["content"]),
+                data=content if isinstance(content, dict) else _json_object(content),
                 provider=self.name,
                 model=self.model,
-                input_tokens=int(usage.get("prompt_tokens") or 0),
-                output_tokens=int(usage.get("completion_tokens") or 0),
+                input_tokens=int(usage.get("prompt_tokens") or usage.get("input_tokens") or 0),
+                output_tokens=int(usage.get("completion_tokens") or usage.get("output_tokens") or 0),
                 request_id=response.headers.get("x-request-id", ""),
             )
+        except ProviderError:
+            raise
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             raise _safe_request_error(self.name, exc) from exc
 

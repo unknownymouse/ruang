@@ -55,7 +55,7 @@
         {% csrf_token %}<button class="rc-btn rc-soft">Regenerate</button>
       </form>
       {% endif %}
-      {% if can_approve and campaign.status == "pending_approval" %}
+      {% if can_materialize and campaign.status == "pending_approval" or can_materialize and campaign.status == "approved" %}
       <form method="post" action="{% url 'automation:approve_campaign' workspace_id=workspace.id campaign_id=campaign.id %}">
         {% csrf_token %}<button class="rc-btn rc-primary">Masukkan {{ draft_count }} konten ke Draft Composer</button>
       </form>
@@ -105,14 +105,21 @@
   </section>
   {% endif %}
 
-  {% if campaign.status == "pending_approval" %}
+  {% if campaign.status == "pending_approval" or campaign.status == "approved" %}
   <section class="rc-handoff">
     <div>
       <strong>{{ draft_count }} konten AI siap direview.</strong>
       <p style="font-size:12px;color:#57534e;margin-top:4px;">Kirim ke Draft Composer setelah caption dan moderation sesuai. Konten tetap berstatus draft—tidak langsung terjadwal atau terpublikasi.</p>
       {% if flagged_count %}<p style="font-size:12px;color:#b91c1c;margin-top:5px;">{{ flagged_count }} konten masih memiliki moderation flag.</p>{% endif %}
     </div>
-    {% if can_approve %}<form method="post" action="{% url 'automation:approve_campaign' workspace_id=workspace.id campaign_id=campaign.id %}">{% csrf_token %}<button class="rc-btn rc-primary">Masukkan ke Draft Composer</button></form>{% endif %}
+    {% if missing_platforms %}
+    <div>
+      <p style="font-size:12px;color:#9a3412;margin-bottom:8px;">Hubungkan akun untuk: <strong>{{ missing_platforms|join:", " }}</strong>. Hasil AI tetap aman dan dapat diedit di halaman ini.</p>
+      <a class="rc-btn rc-soft" href="{% url 'social_accounts:list' workspace_id=workspace.id %}">Hubungkan akun sosial</a>
+    </div>
+    {% elif can_approve %}
+    <form method="post" action="{% url 'automation:approve_campaign' workspace_id=workspace.id campaign_id=campaign.id %}">{% csrf_token %}<button class="rc-btn rc-primary">Masukkan ke Draft Composer</button></form>
+    {% endif %}
   </section>
   {% elif campaign.status == "materialized" %}
   <section class="rc-handoff"><div><strong>Konten sudah tersinkron ke Draft Composer.</strong><p style="font-size:12px;color:#57534e;margin-top:4px;">Lanjutkan edit, approval, penjadwalan, dan publikasi dari workflow Composer.</p></div><a class="rc-btn rc-primary" href="{% url 'composer:drafts_list' workspace_id=workspace.id %}">Buka Draft Composer</a></section>

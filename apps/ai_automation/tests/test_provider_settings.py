@@ -10,7 +10,12 @@ from apps.accounts.legal import record_current_legal_acceptance
 from apps.accounts.models import User
 from apps.ai_automation.forms import AIProviderConnectionForm
 from apps.ai_automation.models import AIProviderAuditLog, AIProviderConnection
-from apps.ai_automation.services.providers import GeminiProvider, ProviderError, configured_providers
+from apps.ai_automation.services.providers import (
+    GeminiProvider,
+    OpenAICompatibleProvider,
+    ProviderError,
+    configured_providers,
+)
 from apps.members.models import OrgMembership, WorkspaceMembership
 from apps.organizations.models import Organization
 from apps.workspaces.models import Workspace
@@ -272,3 +277,64 @@ def test_provider_http_error_does_not_leak_gemini_key():
 
     assert "secret" not in str(exc_info.value)
     assert "HTTP 401" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"choices": [{"message": {"content": [{"type": "text", "text": "{\"ok\": true}"}]}}]},
+        {"choices": [{"message": {"content": {"ok": True}}}]},
+        {"result": {"ok": True}},
+        {"output_text": "{\"ok\": true}"},
+        {"output": [{"content": [{"type": "output_text", "text": "{\"ok\": true}"}]}]},
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": None,
+                        "tool_calls": [{"function": {"arguments": "{\"ok\": true}"}}],
+                    }
+                }
+            ]
+        },
+    ],
+)
+def test_openai_compatible_accepts_common_response_envelopes(payload):
+    request = httpx.Request("POST", "https://gateway.example.test/v1/chat/completions")
+    response = httpx.Response(
+        200,
+        request=request,
+        json=payload,
+        headers={"x-request-id": "request-123"},
+    )
+
+    with patch("apps.ai_automation.services.providers.httpx.post", return_value=response):
+        result = OpenAICompatibleProvider(
+            name="openai_compatible",
+            api_key="secret",
+            base_url="https://gateway.example.test/v1",
+            model="custom-model",
+        ).generate_json(system="system", prompt="prompt")
+
+    assert result.data == {"ok": True}
+    assert result.request_id == "request-123"
+
+
+def test_openai_compatible_reports_missing_content_without_leaking_body():
+    request = httpx.Request("POST", "https://gateway.example.test/v1/chat/completions")
+    response = httpx.Response(
+        200,
+        request=request,
+        json={"id": "response-id", "choices": [{"message": {"role": "assistant"}}]},
+    )
+
+    with (
+        patch("apps.ai_automation.services.providers.httpx.post", return_value=response),
+        pytest.raises(ProviderError, match="missing generated content"),
+    ):
+        OpenAICompatibleProvider(
+            name="openai_compatible",
+            api_key="secret",
+            base_url="https://gateway.example.test/v1",
+            model="custom-model",
+        ).generate_json(system="system", prompt="prompt")
