@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    AIProviderAuditLog,
     AIUsageEvent,
     AutomationAuditLog,
     BrandBrain,
@@ -53,3 +54,9 @@ class AutomationAuditLogAdmin(admin.ModelAdmin):
     list_display = ("workspace", "action", "object_type", "object_id", "actor", "created_at")
     list_filter = ("action", "object_type")
     readonly_fields = [field.name for field in AutomationAuditLog._meta.fields]
+
+@admin.register(AIProviderAuditLog)
+class AIProviderAuditLogAdmin(admin.ModelAdmin):
+    list_display = ("organization", "provider", "action", "actor", "created_at")
+    list_filter = ("provider", "action")
+    readonly_fields = [field.name for field in AIProviderAuditLog._meta.fields]

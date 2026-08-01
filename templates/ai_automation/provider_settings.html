@@ -1,0 +1,92 @@
+{% extends "layouts/settings.html" %}
+{% block title %}AI Providers - Settings - Ruang{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-8">
+  <h1 class="text-2xl font-semibold tracking-tight" style="color:var(--text-primary)">AI Providers</h1>
+  <p class="text-sm mt-2 mb-8 max-w-2xl" style="color:var(--text-secondary)">
+    Connect credentials for {{ organization.name }}. Active connections are tried by priority, then Ruang uses VPS environment fallbacks.
+  </p>
+
+  <section class="rounded-xl p-5 mb-7" style="background:var(--surface-0);border:1px solid var(--border)">
+    <h2 class="text-base font-semibold" style="color:var(--text-primary)">Connect provider</h2>
+    <p class="text-xs mt-1 mb-5" style="color:var(--text-tertiary)">Keys are encrypted at rest, masked after saving, and excluded from audit metadata.</p>
+    <form method="post" class="space-y-4" autocomplete="off">
+      {% csrf_token %}<input type="hidden" name="action" value="create">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="provider" class="block text-sm font-semibold mb-1.5">Provider</label>
+          <select id="provider" name="provider" required class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
+            <option value="">Choose provider</option>
+            {% for value, label in provider_choices %}<option value="{{ value }}" {% if create_form.provider.value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="api_key" class="block text-sm font-semibold mb-1.5">API key</label>
+          <input id="api_key" name="api_key" type="password" required autocomplete="new-password" spellcheck="false" class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
+        </div>
+        <div>
+          <label for="model_name" class="block text-sm font-semibold mb-1.5">Model</label>
+          <input id="model_name" name="model_name" type="text" maxlength="200" value="{{ create_form.model_name.value|default:'' }}" placeholder="Blank uses the VPS default" class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
+        </div>
+        <div>
+          <label for="base_url" class="block text-sm font-semibold mb-1.5">Custom base URL</label>
+          <input id="base_url" name="base_url" type="url" maxlength="500" value="{{ create_form.base_url.value|default:'' }}" placeholder="https://api.example.com/v1" class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
+          <p class="text-xs mt-1" style="color:var(--text-tertiary)">OpenAI-compatible only; public HTTPS endpoints.</p>
+        </div>
+        <div>
+          <label for="priority" class="block text-sm font-semibold mb-1.5">Priority</label>
+          <input id="priority" name="priority" type="number" min="1" max="1000" value="{{ create_form.priority.value|default:100 }}" required class="input-focus w-full px-3 py-2.5 text-sm rounded-lg outline-none" style="border:1px solid var(--border);background:var(--surface-0)">
+        </div>
+        <label class="flex items-center gap-3 self-center mt-4 cursor-pointer"><input name="is_active" type="checkbox" value="on" checked><span class="text-sm font-medium">Active immediately</span></label>
+      </div>
+      <div class="flex justify-end"><button type="submit" class="px-5 py-2.5 text-sm font-semibold rounded-full cursor-pointer" style="background:var(--primary-600,#4f46e5);color:white">Save connection</button></div>
+    </form>
+  </section>
+
+  <div class="space-y-4">
+  {% for connection in connections %}
+    <section class="rounded-xl p-5" style="background:var(--surface-0);border:1px solid var(--border)">
+      <div class="flex flex-wrap justify-between gap-3 mb-5">
+        <div><h2 class="text-base font-semibold">{{ connection.get_provider_display }}</h2><p class="text-xs mt-1" style="color:var(--text-tertiary)">{{ connection.masked_api_key }} - priority {{ connection.priority }} - updated {{ connection.updated_at|timesince }} ago</p></div>
+        {% if not connection.is_active %}<span class="px-2.5 py-1 text-xs font-semibold rounded-full" style="background:var(--neutral-100)">Paused</span>
+        {% elif connection.test_result == "success" %}<span class="px-2.5 py-1 text-xs font-semibold rounded-full" style="background:#dcfce7;color:#166534">Test passed</span>
+        {% elif connection.test_result == "failure" %}<span class="px-2.5 py-1 text-xs font-semibold rounded-full" style="background:#fee2e2;color:#991b1b">Test failed</span>
+        {% else %}<span class="px-2.5 py-1 text-xs font-semibold rounded-full" style="background:#fef3c7;color:#92400e">Not tested</span>{% endif %}
+      </div>
+      {% if connection.last_error %}<div class="text-xs rounded-lg px-3 py-2 mb-4" style="background:#fef2f2;color:#991b1b">{{ connection.last_error }}</div>{% endif %}
+      <form method="post" class="space-y-4" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="provider" value="{{ connection.provider }}">
+        {% if connection.provider != "openai_compatible" %}<input type="hidden" name="base_url" value="{{ connection.base_url }}">{% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div><label class="block text-xs font-semibold mb-1.5">Model</label><input name="model_name" type="text" maxlength="200" value="{{ connection.model_name }}" required class="input-focus w-full px-3 py-2 text-sm rounded-lg outline-none" style="border:1px solid var(--border)"></div>
+          <div><label class="block text-xs font-semibold mb-1.5">Priority</label><input name="priority" type="number" min="1" max="1000" value="{{ connection.priority }}" required class="input-focus w-full px-3 py-2 text-sm rounded-lg outline-none" style="border:1px solid var(--border)"></div>
+          <div><label class="block text-xs font-semibold mb-1.5">Replace API key</label><input name="api_key" type="password" autocomplete="new-password" spellcheck="false" placeholder="{{ connection.masked_api_key }}" class="input-focus w-full px-3 py-2 text-sm rounded-lg outline-none" style="border:1px solid var(--border)"></div>
+        </div>
+        {% if connection.provider == "openai_compatible" %}<div><label class="block text-xs font-semibold mb-1.5">Custom base URL</label><input name="base_url" type="url" maxlength="500" value="{{ connection.base_url }}" required class="input-focus w-full px-3 py-2 text-sm rounded-lg outline-none" style="border:1px solid var(--border)"></div>{% endif %}
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <label class="flex items-center gap-2 cursor-pointer"><input name="is_active" type="checkbox" value="on" {% if connection.is_active %}checked{% endif %}><span class="text-sm font-medium">Active</span></label>
+          <button type="submit" class="px-4 py-2 text-sm font-medium rounded-full cursor-pointer" style="background:var(--neutral-100)">Save changes</button>
+        </div>
+      </form>
+      <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4" style="border-top:1px solid var(--border)">
+        <p class="text-xs" style="color:var(--text-tertiary)">{% if connection.tested_at %}Last tested {{ connection.tested_at|timesince }} ago.{% else %}Not tested yet.{% endif %} A test may consume a few tokens.</p>
+        <div class="flex gap-2">
+          <form method="post" action="{% url 'ai_provider_settings:test' org_id=organization.id connection_id=connection.id %}">{% csrf_token %}<button type="submit" class="px-4 py-2 text-sm font-medium rounded-full cursor-pointer" style="border:1px solid var(--border)">Test connection</button></form>
+          <form method="post" onsubmit="return confirm('Remove this AI provider connection?');">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="connection_id" value="{{ connection.id }}"><button type="submit" class="px-4 py-2 text-sm font-medium rounded-full cursor-pointer" style="background:#fef2f2;color:#b91c1c">Remove</button></form>
+        </div>
+      </div>
+    </section>
+  {% empty %}
+    <div class="rounded-xl p-9 text-center" style="background:var(--surface-0);border:1px dashed var(--border)"><h2 class="text-base font-semibold">No organization provider connected</h2><p class="text-sm mt-1" style="color:var(--text-secondary)">Add an encrypted credential with the form above.</p></div>
+  {% endfor %}
+  </div>
+
+  <section class="mt-8 rounded-xl p-5" style="background:var(--surface-0);border:1px solid var(--border)">
+    <h2 class="text-sm font-semibold">VPS environment fallbacks</h2>
+    <p class="text-xs mt-1 mb-3" style="color:var(--text-tertiary)">Read-only here. Organization connections take precedence.</p>
+    <div class="flex flex-wrap gap-2">{% for provider in environment_providers %}<span class="px-2.5 py-1 text-xs rounded-full" style="background:var(--neutral-100)">{{ provider }}</span>{% empty %}<span class="text-xs" style="color:var(--text-tertiary)">None configured.</span>{% endfor %}</div>
+  </section>
+  <p class="text-xs mt-5" style="color:var(--text-tertiary)">Compliance: disclose external AI providers that process customer content in your Privacy Policy or subprocessor list.</p>
+</div>
+{% endblock %}

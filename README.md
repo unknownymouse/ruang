@@ -136,6 +136,15 @@ PLATFORM_X_CLIENT_SECRET=
 
 Provider dieksekusi berurutan; provider berikutnya menjadi fallback ketika request sebelumnya gagal.
 
+Owner dan admin organisasi dapat membuka **Settings -> AI Providers** untuk
+menyimpan koneksi OpenAI, Anthropic, Gemini, atau endpoint OpenAI-compatible
+tanpa mengubah environment server. API key dienkripsi menggunakan SECRET_KEY,
+hanya ditampilkan dalam bentuk mask, dan perubahan/test dicatat tanpa secret.
+Koneksi organisasi diprioritaskan berdasarkan angka priority; konfigurasi
+environment di bawah tetap dipakai sebagai fallback VPS. Jaga SECRET_KEY tetap
+stabil saat redeploy, gunakan endpoint custom HTTPS publik, dan ungkapkan
+provider eksternal pada Privacy Policy/subprocessor list.
+
 ```env
 RUANG_AI_PROVIDERS=openai,anthropic,gemini,openai_compatible,demo
 

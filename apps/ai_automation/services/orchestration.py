@@ -163,7 +163,7 @@ def generate_campaign(campaign: Campaign, actor=None, router: ProviderRouter | N
     started = time.monotonic()
     try:
         enforce_quota(campaign.workspace, brand_brain)
-        result = (router or ProviderRouter()).generate_json(
+        result = (router or ProviderRouter(organization=campaign.workspace.organization)).generate_json(
             system="You create brand-safe, evidence-aware, platform-native content plans as strict JSON.",
             prompt=prompt,
         )

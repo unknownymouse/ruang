@@ -6,7 +6,111 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 
-from apps.common.managers import WorkspaceScopedManager
+from apps.common.encryption import EncryptedTextField
+from apps.common.managers import OrgScopedManager, WorkspaceScopedManager
+
+
+class AIProviderConnection(models.Model):
+    """Organization-scoped AI credentials encrypted at rest."""
+
+    class Provider(models.TextChoices):
+        OPENAI = "openai", "OpenAI"
+        ANTHROPIC = "anthropic", "Anthropic"
+        GEMINI = "gemini", "Google Gemini"
+        OPENAI_COMPATIBLE = "openai_compatible", "OpenAI-compatible"
+
+    class TestResult(models.TextChoices):
+        UNTESTED = "untested", "Untested"
+        SUCCESS = "success", "Connected"
+        FAILURE = "failure", "Connection failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="ai_provider_connections",
+    )
+    provider = models.CharField(max_length=32, choices=Provider.choices)
+    api_key = EncryptedTextField()
+    base_url = models.URLField(max_length=500, blank=True, default="")
+    model_name = models.CharField(max_length=200)
+    priority = models.PositiveSmallIntegerField(default=100)
+    is_active = models.BooleanField(default=True)
+    test_result = models.CharField(
+        max_length=16,
+        choices=TestResult.choices,
+        default=TestResult.UNTESTED,
+    )
+    tested_at = models.DateTimeField(blank=True, null=True)
+    last_error = models.CharField(max_length=500, blank=True, default="")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_ai_provider_connections",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_ai_provider_connections",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = OrgScopedManager()
+
+    class Meta:
+        db_table = "ai_automation_provider_connection"
+        ordering = ["priority", "provider"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "provider"],
+                name="uniq_ai_provider_per_organization",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["organization", "is_active", "priority"],
+                name="idx_ai_provider_org_active",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.organization.name} - {self.get_provider_display()}"
+
+    @property
+    def masked_api_key(self) -> str:
+        value = str(self.api_key or "")
+        return f"****{value[-4:]}" if len(value) > 4 else "****"
+
+
+class AIProviderAuditLog(models.Model):
+    """Secret-free audit trail for provider credential lifecycle events."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="ai_provider_audit_logs",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ai_provider_audit_logs",
+    )
+    provider = models.CharField(max_length=32)
+    action = models.CharField(max_length=40, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "ai_automation_provider_audit_log"
+        ordering = ["-created_at"]
 
 
 class BrandBrain(models.Model):

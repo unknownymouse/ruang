@@ -13,6 +13,18 @@ class ProviderError(RuntimeError):
     pass
 
 
+def _safe_request_error(provider: str, exc: Exception) -> ProviderError:
+    """Return a useful error without leaking auth headers or query parameters."""
+
+    if isinstance(exc, httpx.HTTPStatusError):
+        return ProviderError(f"{provider} request failed (HTTP {exc.response.status_code}).")
+    if isinstance(exc, httpx.TimeoutException):
+        return ProviderError(f"{provider} request timed out.")
+    if isinstance(exc, httpx.RequestError):
+        return ProviderError(f"{provider} request failed because of a network error.")
+    return ProviderError(f"{provider} returned an invalid response.")
+
+
 @dataclass(frozen=True)
 class AIResult:
     data: dict[str, Any]
@@ -78,7 +90,7 @@ class OpenAICompatibleProvider:
                 request_id=response.headers.get("x-request-id", ""),
             )
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise ProviderError(f"{self.name} request failed: {exc}") from exc
+            raise _safe_request_error(self.name, exc) from exc
 
 
 class AnthropicProvider:
@@ -117,7 +129,7 @@ class AnthropicProvider:
                 request_id=response.headers.get("request-id", ""),
             )
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise ProviderError(f"Anthropic request failed: {exc}") from exc
+            raise _safe_request_error("Anthropic", exc) from exc
 
 
 class GeminiProvider:
@@ -155,7 +167,7 @@ class GeminiProvider:
                 request_id=response.headers.get("x-request-id", ""),
             )
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise ProviderError(f"Gemini request failed: {exc}") from exc
+            raise _safe_request_error("Gemini", exc) from exc
 
 
 class DemoProvider:
@@ -281,8 +293,8 @@ def _channel_role(platform: str) -> str:
 
 
 class ProviderRouter:
-    def __init__(self, providers: list[Any] | None = None):
-        self.providers = providers if providers is not None else configured_providers()
+    def __init__(self, providers: list[Any] | None = None, *, organization=None):
+        self.providers = providers if providers is not None else configured_providers(organization=organization)
 
     def generate_json(self, *, system: str, prompt: str) -> AIResult:
         errors = []
@@ -296,9 +308,36 @@ class ProviderRouter:
         raise ProviderError("All configured AI providers failed: " + " | ".join(errors))
 
 
-def configured_providers() -> list[Any]:
+def provider_from_connection(connection):
+    if connection.provider in {"openai", "openai_compatible"}:
+        return OpenAICompatibleProvider(
+            name=connection.provider,
+            api_key=connection.api_key,
+            base_url=connection.base_url,
+            model=connection.model_name,
+        )
+    if connection.provider == "anthropic":
+        return AnthropicProvider(api_key=connection.api_key, model=connection.model_name)
+    if connection.provider == "gemini":
+        return GeminiProvider(api_key=connection.api_key, model=connection.model_name)
+    raise ProviderError("Unsupported AI provider configuration.")
+
+
+def test_provider_connection(connection) -> AIResult:
+    """Make a minimal explicit request without exposing the stored credential."""
+
+    return provider_from_connection(connection).generate_json(
+        system="Return only a valid JSON object. Do not add markdown.",
+        prompt='Connection check. Return exactly {"ok": true}.',
+    )
+
+
+def _environment_providers(*, excluded_names: set[str] | None = None) -> list[Any]:
     providers: list[Any] = []
+    excluded = excluded_names or set()
     for name in getattr(settings, "RUANG_AI_PROVIDERS", ["demo"]):
+        if name in excluded:
+            continue
         if name == "openai" and settings.RUANG_OPENAI_API_KEY:
             providers.append(
                 OpenAICompatibleProvider(
@@ -333,4 +372,24 @@ def configured_providers() -> list[Any]:
             )
         elif name == "demo":
             providers.append(DemoProvider())
+    return providers
+
+
+def configured_providers(organization=None) -> list[Any]:
+    """Return organization connections first, followed by environment fallbacks."""
+
+    providers: list[Any] = []
+    configured_names: set[str] = set()
+    if organization is not None:
+        from apps.ai_automation.models import AIProviderConnection
+
+        connections = AIProviderConnection.objects.filter(
+            organization=organization,
+            is_active=True,
+        ).order_by("priority", "provider")
+        for connection in connections:
+            providers.append(provider_from_connection(connection))
+            configured_names.add(connection.provider)
+
+    providers.extend(_environment_providers(excluded_names=configured_names))
     return providers

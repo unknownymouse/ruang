@@ -52,7 +52,7 @@ def dashboard(request, workspace_id):
     )
     prompt = get_active_prompt(workspace, request.user)
     usage = usage_summary(workspace)
-    provider_names = [provider.name for provider in configured_providers()]
+    provider_names = [provider.name for provider in configured_providers(organization=workspace.organization)]
     return render(
         request,
         "ai_automation/dashboard.html",
